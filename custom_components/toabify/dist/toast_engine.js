@@ -33,7 +33,7 @@
         script.onload = () => {
             // Hello console
             console.log(
-                "%c🍞 TOASTIFY%c Le moteur a été chargé avec succès !", 
+                "%c🍞 TOASTIFY%c Engine byl úspěšně načten!",
                 "background-color: #ff9800; color: white; font-weight: bold; border-radius: 4px; padding: 2px 5px;", 
                 "color: #ff9800; font-weight: bold;"
             );
@@ -110,7 +110,7 @@
                     await hass.callService(domain, service, serviceData);
                     return true;
                 } catch (e) {
-                    console.error("[Toastify] Erreur service:", e);
+                    console.error("[Toastify] Chyba služby:", e);
                     return false;
                 }
             }
@@ -216,7 +216,7 @@
             if (d.onClick) {
                 const btn = document.createElement("button");
                 const btnBorder = textColor === "#000000" ? "rgba(0,0,0,0.1)" : "rgba(255,255,255,0.25)";
-                btn.innerHTML = `<span class="btn-label-text">${d.onClick.label || "VOIR"}</span>`;
+                btn.innerHTML = `<span class="btn-label-text">${d.onClick.label || "ZOBRAZIT"}</span>`;
                 btn.style.fontSize = "0.75em";
                 btn.style.fontWeight = "bold";
                 btn.style.letterSpacing = "0.5px";
@@ -254,9 +254,9 @@
                             
                             setTimeout(() => {
                                 if (success) {
-                                    btn.innerHTML = `<span class="btn-label-text"><ha-icon icon="mdi:check" style="--mdc-icon-size: 16px; margin-right: 5px;"></ha-icon> EFFECTUÉ</span>`;
+                                    btn.innerHTML = `<span class="btn-label-text"><ha-icon icon="mdi:check" style="--mdc-icon-size: 16px; margin-right: 5px;"></ha-icon> CHYBA</span>`;
                                 } else {
-                                    btn.innerHTML = `<span class="btn-label-text"><ha-icon icon="mdi:alert-circle" style="--mdc-icon-size: 16px; margin-right: 5px;"></ha-icon> ERREUR</span>`;
+                                    btn.innerHTML = `<span class="btn-label-text"><ha-icon icon="mdi:alert-circle" style="--mdc-icon-size: 16px; margin-right: 5px;"></ha-icon> CHYBA</span>`;
                                     btn.style.background = "rgba(255, 0, 0, 0.3)";
                                 }
 
@@ -297,7 +297,7 @@
             { type: "toastify/subscribe" }
         ).then(
             null, // Silencieux si tout va bien
-            (err) => console.error("[Toastify] Le tunnel a été refusé par le serveur", err)
+            (err) => console.error("[Toastify] Spojení (tunnel) bylo serverem odmítnuto", err)
         );
     }
 })();
