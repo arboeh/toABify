@@ -38,19 +38,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-      - name: Install hassfest
-        run: pip install hassfest
-      - name: Validate integration
-        run: hassfest -p custom_components/toabify
+      - name: Hassfest validation
+        uses: home-assistant/actions/hassfest@master
 
   vendor-check:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
       - name: Verify vendored files
-        run: |
-          pip install hashlib || true
-          python scripts/verify_vendor.py
+        run: python scripts/verify_vendor.py
