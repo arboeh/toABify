@@ -57,7 +57,7 @@ async def test_async_setup_adds_extra_js_url(hass, enable_custom_integrations):
 
     with (
         patch("custom_components.toabify.websocket_api.async_register_command"),
-        patch("homeassistant.components.frontend.add_extra_js_url") as mock_add_js,
+        patch("custom_components.toabify.add_extra_js_url") as mock_add_js,
     ):
         await async_setup(hass, {})
 
