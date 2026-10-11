@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Documentation
+    url: https://github.com/arboeh/toABify#readme
+    about: Read the documentation before opening an issue
+  - name: Changelog
+    url: https://github.com/arboeh/toABify/blob/main/CHANGELOG.md
+    about: Check recent changes and known deviations
+  - name: Development guide (known deviations)
+    url: https://github.com/arboeh/toABify/blob/main/DEVELOPMENT.md#12-known-deviations-not-changed-in-this-refactoring
+    about: Some behaviors are known and intentionally unchanged

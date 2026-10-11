@@ -216,7 +216,7 @@
             if (d.onClick) {
                 const btn = document.createElement("button");
                 const btnBorder = textColor === "#000000" ? "rgba(0,0,0,0.1)" : "rgba(255,255,255,0.25)";
-                btn.innerHTML = `<span class="btn-label-text">${d.onClick.label || "VOIR"}</span>`;
+                btn.innerHTML = `<span class="btn-label-text">${d.onClick.label || "CLOSE"}</span>`;
                 btn.style.fontSize = "0.75em";
                 btn.style.fontWeight = "bold";
                 btn.style.letterSpacing = "0.5px";

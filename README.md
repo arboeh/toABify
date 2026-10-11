@@ -52,7 +52,7 @@ notify:
 | `onClick` | Click action: HA service call object (`action`, `action_data`, `label`, `feedback`) or URL/path string (e.g., `/lovelace/0`). | *(none)* |
 | `callback` | Action on toast dismissal: HA service call object (`action`, `action_data`) or URL/path string (e.g., `/lovelace/0`). | *(none)* |
 | `action_data` | Data for HA service calls. Used within `onClick` or `callback`. | *(dict)* |
-| `button_label` | Label for the onClick button. | `VOIR` |
+| `button_label` | Label for the onClick button. | `CLOSE` |
 
 > **Note**: `visibility`, `action_data`, and `button_label` are toABify-specific. For all other parameters, see the upstream Toastify-JS docs: https://github.com/apvarun/toastify-js
 

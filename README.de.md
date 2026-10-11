@@ -52,7 +52,7 @@ notify:
 | `onClick` | Klick-Aktion: HA-Dienstaufruf-Objekt (`action`, `action_data`, `label`, `feedback`) oder URL/Pfad-String (z. B. `/lovelace/0`). | *(keine)* |
 | `callback` | Aktion beim Schließen: HA-Dienstaufruf-Objekt (`action`, `action_data`) oder URL/Pfad-String (z. B. `/lovelace/0`). | *(keine)* |
 | `action_data` | Daten für HA-Dienstaufrufe. Wird in `onClick` oder `callback` verwendet. | *(dict)* |
-| `button_label` | Beschriftung der onClick-Schaltfläche. | `VOIR` |
+| `button_label` | Beschriftung der onClick-Schaltfläche. | `CLOSE` |
 
 > **Hinweis**: `visibility`, `action_data` und `button_label` sind toABify-spezifisch. Alle anderen Parameter finden Sie in der Upstream-Toastify-JS-Dokumentation: https://github.com/apvarun/toastify-js
 

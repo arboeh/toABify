@@ -17,7 +17,7 @@ TOAST_ENGINE_JS = f"{STATIC_URL_PATH}/toast_engine.js"
 STATIC_PATH = f"custom_components/{DOMAIN}/dist"
 
 # --- Default values for notification data ---
-DEFAULT_BUTTON_LABEL = "VOIR"
+DEFAULT_BUTTON_LABEL = "CLOSE"
 DEFAULT_COLOR = "info"
 DEFAULT_GRAVITY = "top"
 DEFAULT_POSITION = "right"
