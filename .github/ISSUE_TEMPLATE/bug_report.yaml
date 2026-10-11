@@ -1,0 +1,122 @@
+name: 🐛 Bug Report
+description: Report a bug or unexpected behavior
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## Before submitting
+
+        - Check the [README](https://github.com/arboeh/toABify#readme) and the [known deviations](https://github.com/arboeh/toABify/blob/main/DEVELOPMENT.md)
+        - Search [existing issues](https://github.com/arboeh/toABify/issues)
+        - Verify you are using the latest version
+        - toABify must not be installed together with HA-Toastify
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Bug Description
+      description: Clear description of the bug
+      placeholder: "When I call notify.toabify with visibility: all, no toast appears in Settings..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Behavior
+      description: What should happen instead?
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: toABify Version
+      placeholder: "2.0.0"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: install_method
+    attributes:
+      label: Installation Method
+      options:
+        - HACS (custom repository)
+        - Manual copy
+    validations:
+      required: true
+
+  - type: input
+    id: ha_version
+    attributes:
+      label: Home Assistant Version
+      placeholder: "2026.10.0"
+    validations:
+      required: true
+
+  - type: input
+    id: browser
+    attributes:
+      label: Browser / Companion App
+      description: Which browser or Home Assistant Companion App shows the toast?
+      placeholder: "Chrome 130, iOS Companion App, etc."
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to Reproduce
+      placeholder: |
+        1. Add the notify platform to configuration.yaml
+        2. Call notify.toabify with the data below
+        3. Observe the bug
+    validations:
+      required: true
+
+  - type: textarea
+    id: service_call
+    attributes:
+      label: Service Call (YAML)
+      description: Paste your notify.toabify call (redact secrets)
+      placeholder: |
+        service: notify.toabify
+        data:
+          message: "Test"
+          data:
+            color: success
+      render: yaml
+    validations:
+      required: false
+
+  - type: textarea
+    id: ha_log
+    attributes:
+      label: Home Assistant Log
+      description: Relevant lines from the HA log (Settings > System > Logs), filtered for "toabify"
+      render: text
+    validations:
+      required: false
+
+  - type: textarea
+    id: console_log
+    attributes:
+      label: Browser Console
+      description: Open dev tools (F12), reload the page, and paste relevant output (look for the TOASTIFY line). If there is nothing, write "none".
+      render: text
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checklist
+      options:
+        - label: I have searched existing issues
+          required: true
+        - label: I have restarted Home Assistant and reloaded the browser cache
+          required: true
+        - label: I have tested with a minimal service call
+          required: false
