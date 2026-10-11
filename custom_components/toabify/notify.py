@@ -2,9 +2,19 @@
 
 from __future__ import annotations
 
-from homeassistant.components.notify import BaseNotificationService
-from homeassistant.core import Context, EventOrigin
+import logging
+
+import voluptuous as vol
+from homeassistant.components.notify import (
+    BaseNotificationService,
+    PLATFORM_SCHEMA,
+)
+from homeassistant.components.notify import async_reject_receipt
+from homeassistant.core import Context, EventOrigin, HomeAssistant
+from homeassistant.exceptions import ServiceValidationError
+from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.event import async_call_later
+from homeassistant.helpers.typing import ConfigType
 
 from .const import (
     DEFAULT_BUTTON_LABEL,
@@ -17,8 +27,41 @@ from .const import (
     EVENT_TOAST,
 )
 
+_LOGGER = logging.getLogger(__name__)
 
-async def async_get_service(hass, config, discovery_info=None):
+_NOTIFY_DATA_SCHEMA = vol.Schema(
+    {
+        vol.Optional("duration", default=DEFAULT_TIMEOUT): vol.All(
+            vol.Coerce(int), vol.Range(min=0)
+        ),
+        vol.Optional("close", default=False): bool,
+        vol.Optional("position", default=DEFAULT_POSITION): vol.In(
+            ["left", "right", "center"]
+        ),
+        vol.Optional("gravity", default=DEFAULT_GRAVITY): vol.In(
+            ["top", "bottom", "center"]
+        ),
+        vol.Optional("icon", default=""): str,
+        vol.Optional("color", default=DEFAULT_COLOR): vol.In(
+            ["success", "info", "warning", "error", "alert", "default"]
+        ),
+        vol.Optional("visibility", default=DEFAULT_VISIBILITY): vol.In(
+            ["all", "dashboard"]
+        ),
+        vol.Optional("button_label", default=DEFAULT_BUTTON_LABEL): str,
+        vol.Optional("oldestFirst", default=True): bool,
+        vol.Optional("onClick"): dict,
+        vol.Optional("callback"): vol.Any(str, dict),
+    },
+    extra=vol.PREVENT_EXTRA,
+)
+
+
+async def async_get_service(
+    hass: HomeAssistant,
+    config: ConfigType,
+    discovery_info: tuple | None = None,
+) -> ToastifyNotificationService:
     """Set up the toABify notification platform."""
     return ToastifyNotificationService(hass)
 
@@ -26,7 +69,7 @@ async def async_get_service(hass, config, discovery_info=None):
 class ToastifyNotificationService(BaseNotificationService):
     """Notification service that fires toasts to the frontend via WebSocket."""
 
-    def __init__(self, hass):
+    def __init__(self, hass: HomeAssistant) -> None:
         """Initialize the service."""
         self.hass = hass
 
@@ -39,11 +82,19 @@ class ToastifyNotificationService(BaseNotificationService):
         Callback data can be a string URL or a dict specifying a
         server-side service call to execute after *duration* milliseconds.
         """
-        data = kwargs.get("data") or {}
+        try:
+            data = _NOTIFY_DATA_SCHEMA(kwargs.get("data") or {})
+        except vol.Invalid as err:
+            raise ServiceValidationError(
+                f"Invalid notification data: {err}"
+            ) from err
+
         callback_data = data.get("callback")
         js_callback = None
 
-        if isinstance(callback_data, str) and callback_data.startswith(("/", "http")):
+        if isinstance(callback_data, str) and callback_data.startswith(
+            ("/", "http")
+        ):
             js_callback = callback_data
 
         duration = data.get("duration", DEFAULT_TIMEOUT)
@@ -69,7 +120,7 @@ class ToastifyNotificationService(BaseNotificationService):
 
         self._handle_callback(callback_data, duration)
 
-    def _handle_callback(self, callback_data, duration) -> None:
+    def _handle_callback(self, callback_data, duration: int) -> None:
         """Schedule a server-side service call if callback data specifies one."""
         if not isinstance(callback_data, dict):
             return
@@ -81,7 +132,9 @@ class ToastifyNotificationService(BaseNotificationService):
         domain, service = action.split(".")
         service_params = callback_data.get("action_data", {})
 
-        async def execute_callback(_):
-            await self.hass.services.async_call(domain, service, service_params)
+        async def execute_callback(_) -> None:
+            await self.hass.services.async_call(
+                domain, service, service_params
+            )
 
         async_call_later(self.hass, duration / 1000, execute_callback)
