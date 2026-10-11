@@ -23,7 +23,7 @@ async def test_async_setup_registers_static_path(hass, enable_custom_integration
 
     with (
         patch("custom_components.toabify.websocket_api.async_register_command"),
-        patch("homeassistant.components.frontend.add_extra_js_url"),
+        patch("custom_components.toabify.add_extra_js_url"),
     ):
         result = await async_setup(hass, {})
 
@@ -41,7 +41,7 @@ async def test_async_setup_registers_websocket_command(hass, enable_custom_integ
 
     with (
         patch("custom_components.toabify.websocket_api.async_register_command") as mock_register_ws,
-        patch("homeassistant.components.frontend.add_extra_js_url"),
+        patch("custom_components.toabify.add_extra_js_url"),
     ):
         await async_setup(hass, {})
 

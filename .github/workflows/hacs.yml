@@ -6,13 +6,18 @@ on:
   pull_request:
     branches: [main]
 
+permissions:
+  contents: read
+  pull-requests: write
+
 jobs:
   hacs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Validate HACS structure
-        uses: hacs/repository-validator@v2
+      - name: HACS validation
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: hacs/action@main
         with:
           category: integration
-          github_token: ${{ secrets.GITHUB_TOKEN }}
