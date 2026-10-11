@@ -67,12 +67,23 @@ eine koordinierte JS-Aktualisierung brechen. Sie werden absichtlich **nicht** w�
 
 ---
 
-## 3. Einrichtung (Windows 11 / PowerShell)
+## 3. Einrichtung (Windows 11 / PowerShell oder Git Bash)
+
+### PowerShell
 
 ```powershell
 py -3 -m venv .venv
 Set-ExecutionPolicy -Scope Process Bypass
 . .\.venv\Scripts\Activate.ps1
+pip install -r requirements_dev.txt
+pre-commit install
+```
+
+### Git Bash (MINGW64)
+
+```bash
+py -3 -m venv .venv
+source .venv/Scripts/activate
 pip install -r requirements_dev.txt
 pre-commit install
 ```
@@ -86,6 +97,8 @@ pre-commit install
 
 ## 4. Befehle
 
+### PowerShell
+
 | Aktion | Befehl |
 |---|---|
 | Linting (prüfen) | `ruff check .` |
@@ -94,10 +107,25 @@ pre-commit install
 | Formatierung (anwenden) | `ruff format .` |
 | Tests ausführen | `pytest` |
 | Tests ausführen (spezifische Datei) | `pytest tests/test_notify.py` |
-| Version-Konsistenz | `python scripts\check_version.py` |
-| Vendor-Integrität | `python scripts\verify_vendor.py` |
+| Version-Konsistenz | `python scripts/check_version.py` |
+| Vendor-Integrität | `python scripts/verify_vendor.py` |
 | Pre-commit (alle Hooks) | `pre-commit run --all-files` |
 | Virtuelle Umgebung aktivieren | `. .\.venv\Scripts\Activate.ps1` |
+
+### Git Bash (MINGW64)
+
+| Aktion | Befehl |
+|---|---|
+| Linting (prüfen) | `ruff check .` |
+| Linting (korrigieren) | `ruff check . --fix` |
+| Formatierung (prüfen) | `ruff format --check .` |
+| Formatierung (anwenden) | `ruff format .` |
+| Tests ausführen | `pytest` |
+| Tests ausführen (spezifische Datei) | `pytest tests/test_notify.py` |
+| Version-Konsistenz | `python scripts/check_version.py` |
+| Vendor-Integrität | `python scripts/verify_vendor.py` |
+| Pre-commit (alle Hooks) | `pre-commit run --all-files` |
+| Virtuelle Umgebung aktivieren | `source .venv/Scripts/activate` |
 
 ---
 
@@ -107,8 +135,8 @@ pre-commit install
 
 Stellen Sie sicher, dass die virtuelle Umgebung eingerichtet und aktiviert ist (siehe Abschnitt 3):
 
-```powershell
-. .\.venv\Scripts\Activate.ps1
+```bash
+source .venv/Scripts/activate
 pip install -r requirements_test.txt
 ```
 
@@ -116,7 +144,7 @@ pip install -r requirements_test.txt
 
 Führen Sie die Tests aus, indem Sie in der Projektwurzel `pytest` ausführen:
 
-```powershell
+```bash
 pytest
 ```
 
@@ -124,7 +152,7 @@ pytest
 
 Um detailliertere Ausgaben zu erhalten (inklusive Print-Statement- und Log-Ausgaben):
 
-```powershell
+```bash
 pytest -v --tb=short
 ```
 
@@ -132,7 +160,7 @@ pytest -v --tb=short
 
 Um nur eine bestimmte Test-Datei oder -Klasse auszuführen:
 
-```powershell
+```bash
 pytest tests/test_notify.py
 pytest tests/test_notify.py::test_send_message_defaults
 ```
@@ -141,7 +169,7 @@ pytest tests/test_notify.py::test_send_message_defaults
 
 Falls das `pytest-cov`-Plugin installiert ist:
 
-```powershell
+```bash
 pytest --cov=custom_components/toabify --cov-report=term-missing
 ```
 
@@ -199,7 +227,7 @@ byte-gleich zum upstream Toastify-JS-Release oder zur lokalen Engine-Implementie
 3. `vendor_hashes.txt` **nur** aktualisieren, wenn der Vergleich mit upstream
    die neue Version bestätigt (nicht blind bei einem Mismatch aktualisieren).
 4. `THIRD_PARTY_NOTICES.md` aktualisieren, wenn sich die upstream-Version/Lizenz geändert hat.
-5. `python scripts\verify_vendor.py` ausführen, um alle Dateien zu validieren.
+   4. `python scripts/verify_vendor.py` ausführen, um alle Dateien zu validieren.
 6. Manuelle Tests in Home Assistant durchführen: Toasts rendern, `onClick` funktioniert,
    und `visibility: all` erscheint in Einstellungen, Logs, etc.
 
@@ -301,11 +329,11 @@ Nach dem Deployen von Änderungen im Browser verifizieren:
 
 1. Version in `custom_components/toabify/manifest.json` erhöhen.
 2. Einen neuen Abschnitt zu `CHANGELOG.md` unter der neuen Version hinzufügen.
-3. `python scripts\check_version.py` ausführen, um Konsistenz zu validieren.
+3. `python scripts/check_version.py` ausführen, um Konsistenz zu validieren.
 4. Auf einen Feature-Branch committen und pushen.
 5. Stellen Sie sicher, dass CI besteht (Linting, Tests, HACS, Hassfest).
 6. Lokal in `main` zusammenführen **ohne** Pull Request:
-   ```powershell
+   ```bash
    git checkout main
    git merge --no-ff chore/refactor_hacs_structure
    git tag v2.0.0
