@@ -1,0 +1,19 @@
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.venv/
+env/
+.venv.bak
+.ruff_cache/
+.pytest_cache/
+.mypy_cache/
+.kilocode/
+.vscode/
+RELEASE_NOTES.md
+*.egg-info/
+.eggs/
+dist/
+
+# HACS
+hacs_*.json
