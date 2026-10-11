@@ -1,45 +1,53 @@
 (function() {
-    // CSS Loading
-    if (!document.getElementById('toastify-css')) {
-        const link = document.createElement('link');
-        link.id = 'toastify-css';
-        link.rel = 'stylesheet';
-        link.href = '/toastify_lib/toastify.css';
-        document.head.appendChild(link);
+    const loadResource = (id, type, src) => {
+        if (!document.getElementById(id)) {
+            const element = document.createElement(type);
+            element.id = id;
+            if (type === 'link') {
+                element.rel = 'stylesheet';
+                element.href = src;
+            } else if (type === 'script') {
+                element.src = src;
+            }
+            document.head.appendChild(element);
+            return element;
+        }
+        return null;
+    };
 
-        const style = document.createElement('style');
-        style.innerHTML = `
-            @keyframes toast-label-pulse {
-                0% { opacity: 1; }
-                50% { opacity: 0.2; }
-                100% { opacity: 1; }
-            }
-            /* The animation applies only to the child element (the label) */
-            .toast-btn-loading .btn-label-text {
-                animation: toast-label-pulse 0.8s infinite ease-in-out !important;
-            }
-            .toast-btn-loading {
-                pointer-events: none !important;
-                cursor: default;
-            }
-        `;
-        document.head.appendChild(style);
-    }
+    // CSS Loading
+    loadResource('toastify-css', 'link', '/toastify_lib/toastify.css');
+
+    const style = document.createElement('style');
+    style.innerHTML = `
+        @keyframes toast-label-pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.2; }
+            100% { opacity: 1; }
+        }
+        /* The animation applies only to the child element (the label) */
+        .toast-btn-loading .btn-label-text {
+            animation: toast-label-pulse 0.8s infinite ease-in-out !important;
+        }
+        .toast-btn-loading {
+            pointer-events: none !important;
+            cursor: default;
+        }
+    `;
+    document.head.appendChild(style);
 
     // JS Loading
-    if (typeof Toastify === "undefined") {
-        const script = document.createElement("script");
-        script.src = "/toastify_lib/toastify.js";
+    const script = loadResource('toastify-js', 'script', '/toastify_lib/toastify.js');
+    if (script) {
         script.onload = () => {
             // Hello console
             console.log(
-                "%c🍞 TOASTIFY%c Le moteur a été chargé avec succès !", 
+                "%c🍞 TOASTIFY%c Engine loaded successfully!", 
                 "background-color: #ff9800; color: white; font-weight: bold; border-radius: 4px; padding: 2px 5px;", 
                 "color: #ff9800; font-weight: bold;"
             );
             initToastify();
         };
-        document.head.appendChild(script);
     } else {
         initToastify();
     }
@@ -69,7 +77,7 @@
     // based on the toast theme
     function getContrastColor(hexColor) {
         if (!hexColor || hexColor.includes("gradient")) return "#ffffff";
-        
+         
         // If RGBA or RGB theme
         if (hexColor.startsWith("rgba") || hexColor.startsWith("rgb")) {
             return "#ffffff";
@@ -82,8 +90,7 @@
         const b = parseInt(hex.substr(4, 2), 16);
         
         // Brightness calculation (standard YIQ formula)
-        const yiq = ((r * 299) + (g * 587) + (b * 114)) / 1000;
-        return (yiq >= 128) ? "#000000" : "#ffffff";
+        return ((r * 299) + (g * 587) + (b * 114)) / 1000 >= 128 ? "#000000" : "#ffffff";
     }
 
     // Action handler (URL or HA Service)
@@ -182,42 +189,41 @@
             textSpan.style.color = textColor;
             textContainer.appendChild(textSpan);
 
-            // Toast
-            const toastInstance = Toastify({
-                node: container,
-                duration: d.duration || 5000,
-                selector: document.body,
-                close: d.close === true || d.close === "true",
-                gravity: d.gravity || "top",
-                position: d.position || "right",
-                    // avatar: d.icon || "", // Added to node
-                stopOnFocus: true,
-                oldestFirst: d.oldestFirst === true || d.oldestFirst === "true",
-                style: { 
-                    background: finalColor,
-                    color: textColor,
-                    borderRadius: "10px",
-                    boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
-                    zIndex: 9999999,
-                    position: "fixed",
-                    cursor: "default",
-                    display: "flex",
-                    padding: "8px"
-                },
-                onClick: function() {
-                    toastInstance.hideToast();
-                },
-                callback: function() {
-                    if (d.callback) executeAction(d.callback);
-                },
-            });
+             // Toast
+             const toastInstance = Toastify({
+                 node: container,
+                 duration: d.duration || 5000,
+                 selector: document.body,
+                 close: d.close === true || d.close === "true",
+                 gravity: d.gravity || "top",
+                 position: d.position || "right",
+                 stopOnFocus: true,
+                 oldestFirst: d.oldestFirst === true || d.oldestFirst === "true",
+                 style: { 
+                     background: finalColor,
+                     color: textColor,
+                     borderRadius: "10px",
+                     boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+                     zIndex: 9999999,
+                     position: "fixed",
+                     cursor: "default",
+                     display: "flex",
+                     padding: "8px"
+                 },
+                 onClick: function() {
+                     toastInstance.hideToast();
+                 },
+                 callback: function() {
+                     if (d.callback) executeAction(d.callback);
+                 },
+             });
 
             // Button
             if (d.onClick) {
                 const btn = document.createElement("button");
                 const btnBorder = textColor === "#000000" ? "rgba(0,0,0,0.1)" : "rgba(255,255,255,0.25)";
                 btn.innerHTML = `<span class="btn-label-text">${d.onClick.label || "CLOSE"}</span>`;
-                btn.style.fontSize = "0.75em";
+                btn.style.fontSize = "0.8em";
                 btn.style.fontWeight = "bold";
                 btn.style.letterSpacing = "0.5px";
                 btn.style.marginTop = "8px";
@@ -226,7 +232,6 @@
                 btn.style.border = `1px solid ${btnBorder}`;
                 btn.style.color = textColor;
                 btn.style.borderRadius = "6px";
-                btn.style.fontSize = "0.8em";
                 btn.style.cursor = "pointer";
                 btn.style.transition = "all 0.3s ease";
 
@@ -238,38 +243,39 @@
                     const labelSpan = btn.querySelector('.btn-label-text');
                     const hasFeedback = d.onClick.feedback === true || d.onClick.feedback === "true";
 
-                    if (hasFeedback) {
-                        btn.disabled = true;
-                        btn.classList.add("toast-btn-loading");
-                    }
+                     if (hasFeedback) {
+                         btn.disabled = true;
+                         btn.classList.add("toast-btn-loading");
+                     }
 
-                    const success = await executeAction(d.onClick);
+                     const success = await executeAction(d.onClick);
 
-                    if (hasFeedback) {
-                        // Keep the pulse for at least 500ms so it's visible
-                        setTimeout(() => {
-                            btn.classList.remove("toast-btn-loading");
-                            labelSpan.style.transition = "opacity 0.2s ease";
-                            labelSpan.style.opacity = "0";
-                            
-                            setTimeout(() => {
-                                if (success) {
-                                    btn.innerHTML = `<span class="btn-label-text"><ha-icon icon="mdi:check" style="--mdc-icon-size: 16px; margin-right: 5px;"></ha-icon> DONE</span>`;
-                                } else {
-                                    btn.innerHTML = `<span class="btn-label-text"><ha-icon icon="mdi:alert-circle" style="--mdc-icon-size: 16px; margin-right: 5px;"></ha-icon> ERROR</span>`;
-                                    btn.style.background = "rgba(255, 0, 0, 0.3)";
-                                }
+                     if (hasFeedback) {
+                         // Keep the pulse for at least 500ms so it's visible
+                         setTimeout(() => {
+                             btn.classList.remove("toast-btn-loading");
+                             const labelSpan = btn.querySelector('.btn-label-text');
+                             labelSpan.style.transition = "opacity 0.2s ease";
+                             labelSpan.style.opacity = "0";
+                             
+                             setTimeout(() => {
+                                 if (success) {
+                                     btn.innerHTML = `<span class="btn-label-text"><ha-icon icon="mdi:check" style="--mdc-icon-size: 16px; margin-right: 5px;"></ha-icon> DONE</span>`;
+                                 } else {
+                                     btn.innerHTML = `<span class="btn-label-text"><ha-icon icon="mdi:alert-circle" style="--mdc-icon-size: 16px; margin-right: 5px;"></ha-icon> ERROR</span>`;
+                                     btn.style.background = "rgba(255, 0, 0, 0.3)";
+                                 }
 
-                                const newLabel = btn.querySelector('.btn-label-text');
-                                newLabel.style.opacity = "0";
+                                 const newLabel = btn.querySelector('.btn-label-text');
+                                 newLabel.style.opacity = "0";
 
-                                setTimeout(() => newLabel.style.opacity = "1", 300);
-                                setTimeout(() => toastInstance.hideToast(), 1800);
-                            }, 300);
-                        }, 1500);
-                    } else {
-                        setTimeout(() => toastInstance.hideToast(), 500);
-                    }
+                                 setTimeout(() => newLabel.style.opacity = "1", 300);
+                                 setTimeout(() => toastInstance.hideToast(), 1800);
+                             }, 300);
+                         }, 1500);
+                     } else {
+                         setTimeout(() => toastInstance.hideToast(), 500);
+                     }
                 };
                 textContainer.appendChild(btn);
             }

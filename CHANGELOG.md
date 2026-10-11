@@ -5,6 +5,22 @@ All notable changes to the toABify project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.2] - 2026-10-11
+
+### Summary
+
+Code simplification release: refactored toast_engine.js for better maintainability, extracted helper functions, removed redundancies, and updated vendor hash.
+
+### Changed
+
+- **`toast_engine.js`**: Simplified code structure:
+  - Extracted CSS/JS loading into reusable `loadResource` helper function
+  - Simplified `getContrastColor` function by removing intermediate variable
+  - Removed duplicate fontSize assignment in button creation
+  - Removed commented-out avatar line in Toastify configuration
+  - Maintained all existing functionality
+- **`scripts/vendor_hashes.txt`**: Updated SHA-256 hash for toast_engine.js
+
 ## [2.0.1] - 2026-10-11
 
 ### Summary
