@@ -43,9 +43,7 @@ class ToastifyNotificationService(BaseNotificationService):
         callback_data = data.get("callback")
         js_callback = None
 
-        if isinstance(callback_data, str) and (
-            callback_data.startswith("/") or callback_data.startswith("http")
-        ):
+        if isinstance(callback_data, str) and callback_data.startswith(("/", "http")):
             js_callback = callback_data
 
         duration = data.get("duration", DEFAULT_TIMEOUT)
@@ -69,15 +67,21 @@ class ToastifyNotificationService(BaseNotificationService):
             EVENT_TOAST, event_data, origin=EventOrigin.local, context=Context()
         )
 
-        if isinstance(callback_data, dict):
-            action = callback_data.get("action", "")
-            if "." in action:
-                domain, service = action.split(".")
-                service_params = callback_data.get("action_data", {})
+        self._handle_callback(callback_data, duration)
 
-                if duration > 0:
+    def _handle_callback(self, callback_data, duration) -> None:
+        """Schedule a server-side service call if callback data specifies one."""
+        if not isinstance(callback_data, dict):
+            return
 
-                    async def execute_callback(_):
-                        await self.hass.services.async_call(domain, service, service_params)
+        action = callback_data.get("action", "")
+        if "." not in action or duration <= 0:
+            return
 
-                    async_call_later(self.hass, duration / 1000, execute_callback)
+        domain, service = action.split(".")
+        service_params = callback_data.get("action_data", {})
+
+        async def execute_callback(_):
+            await self.hass.services.async_call(domain, service, service_params)
+
+        async_call_later(self.hass, duration / 1000, execute_callback)

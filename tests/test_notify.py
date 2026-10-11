@@ -24,7 +24,7 @@ from custom_components.toabify.notify import ToastifyNotificationService
 # These values match the current hardcoded defaults and will be preserved
 # in const.py during the refactoring (Task 5).
 EVENT_TOAST = "toastify_event"
-DEFAULT_BUTTON_LABEL = "VOIR"
+DEFAULT_BUTTON_LABEL = "CLOSE"
 DEFAULT_COLOR = "info"
 DEFAULT_GRAVITY = "top"
 DEFAULT_POSITION = "right"
@@ -275,6 +275,91 @@ async def test_callback_dict_negative_duration_no_timer(hass, enable_custom_inte
     await hass.async_block_till_done()
 
     assert len(mock_calls) == 0
+
+
+# ---------------------------------------------------------------------------
+# Direct tests for refactored _handle_callback method
+# ---------------------------------------------------------------------------
+
+
+async def test_handle_callback_passes_through_callback_field(hass, enable_custom_integrations):
+    """The callback field in event_data should always be js_callback (string or None)."""
+    service = ToastifyNotificationService(hass)
+    events = async_capture_events(hass, EVENT_TOAST)
+
+    await service.async_send_message(
+        "Hello",
+        data={"callback": "https://example.com/callback"},
+    )
+    await hass.async_block_till_done()
+
+    assert events[0].data["callback"] == "https://example.com/callback"
+
+
+async def test_handle_callback_dict_passes_none_to_event(hass, enable_custom_integrations):
+    """When callback is a dict, the event's callback field should be None (server-side only)."""
+    service = ToastifyNotificationService(hass)
+    events = async_capture_events(hass, EVENT_TOAST)
+
+    await service.async_send_message(
+        "Hello",
+        data={
+            "callback": {
+                "action": "light.turn_on",
+                "action_data": {"entity_id": "light.test"},
+            },
+        },
+    )
+    await hass.async_block_till_done()
+
+    assert events[0].data["callback"] is None
+
+
+async def test_handle_callback_no_action_no_timer(hass, enable_custom_integrations):
+    """Dict callback without an action key should not schedule a timer."""
+    mock_calls = async_mock_service(hass, "light", "turn_on")
+    service = ToastifyNotificationService(hass)
+
+    await service.async_send_message(
+        "Hello",
+        data={
+            "duration": 3000,
+            "callback": {"action_data": {"entity_id": "light.test"}},
+        },
+    )
+    await hass.async_block_till_done()
+
+    async_fire_time_changed(
+        hass,
+        dt.datetime.now(dt.UTC) + dt.timedelta(seconds=5),
+    )
+    await hass.async_block_till_done()
+
+    assert len(mock_calls) == 0
+
+
+async def test_callback_dict_with_action_data(hass, enable_custom_integrations):
+    """Server-side callback with action_data passes params to the service call."""
+    mock_calls = async_mock_service(hass, "light", "turn_on")
+    service = ToastifyNotificationService(hass)
+
+    await service.async_send_message(
+        "Hello",
+        data={
+            "duration": 1000,
+            "callback": {
+                "action": "light.turn_on",
+                "action_data": {"entity_id": "light.living_room", "brightness": 255},
+            },
+        },
+    )
+    await hass.async_block_till_done()
+
+    async_fire_time_changed(hass, dt.datetime.now(dt.UTC) + dt.timedelta(seconds=2))
+    await hass.async_block_till_done()
+
+    assert len(mock_calls) == 1
+    assert mock_calls[0].data == {"entity_id": "light.living_room", "brightness": 255}
 
 
 async def test_callback_dict_multiple_dots_raises_value_error(hass, enable_custom_integrations):

@@ -5,6 +5,25 @@ All notable changes to the toABify project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.1] - 2026-10-11
+
+### Summary
+
+Small maintenance release: code simplification in `notify.py`, default button
+label changed from `VOIR` to `CLOSE` across all docs and tests, and version
+bump for the toABify repository.
+
+### Changed
+
+- **`notify.py`**: Simplified `startswith` check using tuple syntax:
+  `callback_data.startswith(("/", "http"))` replaces the `or` chain.
+- **`notify.py`**: Extracted server-side callback logic into private method
+  `_handle_callback` — reduced from 4 levels of nesting to 1, improves separation
+  of concerns.
+- **`const.py`**: `DEFAULT_BUTTON_LABEL` changed from `"VOIR"` to `"CLOSE"`
+  (consistent across code, tests, and documentation).
+- **`manifest.json`**: Version bumped to `2.0.1`.
+
 ## [2.0.0] - 2026-10-11
 
 ### Summary
