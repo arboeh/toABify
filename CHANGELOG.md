@@ -5,30 +5,23 @@ All notable changes to the toABify project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [2.0.4] - 2026-10-11
+## [2.0.3] - 2026-10-11
+
+### Zusammenfassung
+
+Wartungsrelease: Entfernung von totem Code, Verbesserung der Testsuite, Versionierung, und kritische Bugfixes.
 
 ### Bugfixes
 
 - **`__init__.py`**: `async_setup_entry` ruft nun `discovery.async_load_platform` auf, um die `notify`-Plattform zu registrieren. Ohne diesen Aufruf wurde `notify.toabify` nicht als Service in Home Assistant angelegt.
 - **`__init__.py`**: `async_unload_entry` entfernt nun den Service via `hass.services.async_remove("notify", DOMAIN)`.
-- **`notify.py`**: `async_get_service` wieder hinzugefügt — erforderlich für die Plattform-Registrierung durch HA's Notify-Komponente.
-- **`manifest.json`**: `codeowners` → `codeowners` (Plural, HA-konform); `config_flow: true` hinzugefügt; `notify` zu `after_dependencies` hinzugefügt.
+- **`notify.py`**: `async_get_service` erhalten — erforderlich für die Plattform-Registrierung durch HA's Notify-Komponente.
+- **`manifest.json`**: `codeowner` → `codeowners` (Plural, HA-konform); `config_flow: true` hinzugefügt; `notify` zu `after_dependencies` hinzugefügt.
 - **`strings.json`**: Ungültiger `configuration`-Schlüssel entfernt (verursacht hassfest-Fehler).
 
 ### Geändert
 
-- Versionsnummer auf `2.0.4` erhöht.
-
-## [2.0.3] - 2026-10-11
-
-### Zusammenfassung
-
-Wartungsrelease: Entfernung von totem Code, Verbesserung der Testsuite und Versionierung.
-
-### Geändert
-
 - **`__init__.py`**: Entfernt `CONFIG_SCHEMA` und `async_setup` (veraltete YAML-Kompatibilität, da Integration ausschließlich über Config-Entry-Einrichtung verwendet wird).
-- **`notify.py`**: Entfernt `async_get_service` (veralteter Service-Registrierungspfad).
 - **`notify.py`**: Vereinfacht Aktionsvalidierung — `action or ""` durch direkte `str`-Prüfung ersetzt.
 - **`tests/conftest.py`**: No-op-Abstimmung für `pytest_socket.disable_socket` auf Windows.
 - **`requirements_test.txt`**: `pytest-timeout` hinzugefügt.
@@ -37,8 +30,8 @@ Wartungsrelease: Entfernung von totem Code, Verbesserung der Testsuite und Versi
 
 ### Hinzugefügt
 
-- **`tests/test_init.py`**: Test `test_no_yaml_setup_dead_code` zur Verifikation der Code-Entfernung.
-- **`tests/test_notify.py`**: Test `test_no_async_get_service_dead_code` und `test_non_string_action_no_crash` zur Abdeckung neuer Edge-Cases.
+- **`tests/test_init.py`**: Tests `test_no_yaml_setup_dead_code` und `test_setup_entry_loads_notify_platform` zur Verifikation der Code-Entfernung und Plattform-Registrierung.
+- **`tests/test_notify.py`**: Tests `test_async_get_service_returns_service` und `test_non_string_action_no_crash` zur Abdeckung neuer Edge-Cases.
 
 ## [2.0.2] - 2026-10-11
 
