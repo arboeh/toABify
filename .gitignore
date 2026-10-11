@@ -13,7 +13,7 @@ env/
 RELEASE_NOTES.md
 *.egg-info/
 .eggs/
-dist/
+/dist/
 
 # HACS
 hacs_*.json

@@ -1,8 +1,4 @@
 {
-  "name": "Toastify",
-  "domains": ["toastify"],
-  "homeassistant": "2024.11.0",
-  "iot_class": "local_push",
-  "type": "plugin",
-  "render_readme": true
+  "name": "toABify",
+  "homeassistant": "2024.11.0"
 }
