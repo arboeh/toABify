@@ -1,6 +1,6 @@
 {
   "domain": "toabify",
-  "name": "toABIfy",
+  "name": "toABify",
   "after_dependencies": ["http", "notify"],
   "codeowners": ["@arboeh"],
   "config_flow": true,

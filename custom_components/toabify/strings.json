@@ -2,7 +2,7 @@
   "config": {
     "step": {
       "user": {
-        "title": "toABIfy - Toast Notifications",
+        "title": "toABify - Toast Notifications",
         "description": "Add toast notifications to your Home Assistant dashboard."
       }
     }
