@@ -18,7 +18,6 @@ from .const import (
     DEFAULT_DURATION_EVENT,
     DEFAULT_GRAVITY,
     DEFAULT_POSITION,
-    DEFAULT_TIMEOUT,
     DEFAULT_VISIBILITY,
     EVENT_TOAST,
 )
@@ -33,7 +32,7 @@ _MAX_DURATION_MS: int = 600_000
 
 _NOTIFY_DATA_SCHEMA = vol.Schema(
     {
-        vol.Optional("duration", default=DEFAULT_TIMEOUT): vol.All(
+        vol.Optional("duration", default=DEFAULT_DURATION_EVENT): vol.All(
             vol.Coerce(int), vol.Range(min=0, max=_MAX_DURATION_MS)
         ),
         vol.Optional("close", default=False): bool,
@@ -89,12 +88,12 @@ class ToastifyNotificationService(BaseNotificationService):
         if isinstance(callback_data, str) and callback_data.startswith(("/", "http")):
             js_callback = callback_data
 
-        duration = data.get("duration", DEFAULT_TIMEOUT)
+        duration = data["duration"]  # Schema-validated default DEFAULT_DURATION_EVENT
 
         event_data = {
             "message": message,
-            "duration": data.get("duration", DEFAULT_DURATION_EVENT),
-            "close": data.get("close", False),
+            "duration": duration,
+            "close": data["close"],
             "position": data.get("position", DEFAULT_POSITION),
             "gravity": data.get("gravity", DEFAULT_GRAVITY),
             "icon": data.get("icon", data.get("avatar", "")),
@@ -126,7 +125,9 @@ class ToastifyNotificationService(BaseNotificationService):
             return
 
         action = callback_data.get("action", "")
-        if not isinstance(action, str) or "." not in action or duration <= 0:
+
+        # Negative or zero duration means no timer should fire (e.g., -1 for persistent toast)
+        if not isinstance(action, str) or "." not in action:
             _LOGGER.warning("Invalid callback action format: %s", action)
             return
 
@@ -137,7 +138,17 @@ class ToastifyNotificationService(BaseNotificationService):
             )
             return
 
-        domain, service = action.split(".")
+        if duration <= 0:
+            return  # No timer for non-positive duration
+
+        if not _VALID_SERVICE_RE.match(action):
+            _LOGGER.warning(
+                "Callback action does not match valid service format: %s",
+                action,
+            )
+            return
+
+        domain, service = action.split(".", 1)
         service_params = callback_data.get("action_data", {})
         if not isinstance(service_params, dict):
             _LOGGER.warning("action_data must be a dict, got: %s", type(service_params))
