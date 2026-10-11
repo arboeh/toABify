@@ -166,6 +166,6 @@ class ToastifyNotificationService(BaseNotificationService):
                     domain,
                     service,
                     err,
-                ) from err
+                )
 
         async_call_later(self.hass, duration / 1000, execute_callback)
