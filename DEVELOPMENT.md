@@ -17,7 +17,6 @@ toABify/
 │       ├── const.py         # All constants (protocol IDs + defaults)
 │       ├── notify.py        # async_send_message implementation
 │       ├── manifest.json    # Integration manifest (domain: "toabify")
-│       ├── hacs.json        # HACS integration settings
 │       ├── brand/
 │       │   └── icon.png     # HACS/Brand favicon
 │       └── dist/            # Vendored Toastify-JS 1.12.0 + local toast_engine.js
@@ -37,7 +36,7 @@ toABify/
 ├── .pre-commit-config.yaml  # Ruff, formatting, trailing-whitespace, etc.
 ├── CHANGELOG.md             # Semantic versioning changelog
 ├── CONTRIBUTING.md          # Points to this file
-├── MANIFEST.in              # Python package manifest (if needed)
+├── hacs.json                # HACS integration settings (repo root)
 ├── pyproject.toml           # Ruff, pytest, Python project config
 ├── requirements_dev.txt     # Development dependencies
 ├── requirements_test.txt    # Test dependencies (pytest, HA test fixtures)
@@ -112,8 +111,8 @@ The following hooks are configured in `.pre-commit-config.yaml`:
 | `ruff-format` | Code formatting | Yes |
 | `trailing-whitespace` | Strip trailing whitespace | Yes |
 | `end-of-file-fixer` | Ensure newlines at EOF | Yes |
-| `mixed-line-ending` | Consistent line endings | Yes |
 | `check-yaml` | YAML validation | No (no YAML in dist) |
+| `check-json` | JSON validation (`.pre-commit-config.yaml`, `hacs.json`) | No (no JSON in dist) |
 
 > `pytest` is **not** run as a pre-commit hook; it runs exclusively in CI
 > (GitHub Actions) because the HA test fixture requires a full event loop
@@ -143,13 +142,14 @@ implementation.
 **Update process** (when upgrading Toastify-JS or modifying the engine):
 
 1. Replace the file(s) in `dist/`.
-2. Update `THIRD_PARTY_NOTICES.md` if the upstream version/license changed.
-3. Run `python scripts\verify_vendor.py` — update `vendor_hashes.txt` with
-   new hashes if the check fails:
-   ```powershell
-   Get-FileHash -Algorithm SHA256 custom_components\toabify\dist\*.js, custom_components\toabify\dist\*.css
-   ```
-4. Manually test in Home Assistant: verify toasts render, `onClick` works,
+2. Verify the change against upstream before updating hashes:
+   - For Toastify-JS files: download `toastify.js` and `toastify.css` from the
+     npm package `toastify-js@1.12.0` and compare SHA-256.
+3. Update `vendor_hashes.txt` **only** if the upstream comparison confirms the
+   new version matches (do not blindly update on mismatch).
+4. Update `THIRD_PARTY_NOTICES.md` if the upstream version/license changed.
+5. Run `python scripts\verify_vendor.py` to confirm all files pass.
+6. Manually test in Home Assistant: verify toasts render, `onClick` works,
    and `visibility: all` toasts appear outside the dashboard.
 
 ---
@@ -253,8 +253,14 @@ After deploying changes, verify in a browser:
 2. Add a new section to `CHANGELOG.md` under the new version.
 3. Run `python scripts\check_version.py` to validate consistency.
 4. Commit and push to a feature branch.
-5. Open a Pull Request — CI must pass (lint, tests, HACS, Hassfest).
-6. After merge, create a git tag: `git tag v1.2.3 && git push --tags`.
+5. Ensure CI passes (lint, tests, HACS, Hassfest).
+6. Locally merge into `main` **without** a Pull Request:
+   ```powershell
+   git checkout main
+   git merge --no-ff chore/refactor_hacs_structure
+   git tag v2.0.0
+   git push origin main --tags
+   ```
 7. The **Release** workflow creates a GitHub Release automatically.
 8. Install in HACS and verify toasts appear in the browser.
 
@@ -284,12 +290,15 @@ After deploying changes, verify in a browser:
    `defaults.oldestFirst = true`, so the flag is a no-op.
 
 4. **`innerHTML` for content**: Toast content is rendered via `innerHTML`
-   in `toast_engine.js`, which poses an XSS risk if untrusted user input
-   is passed. This is inherent to the vendored library and not changed.
+   in `toast_engine.js` (specifically `btn.innerHTML` with `onClick.label`),
+   which poses an XSS risk if untrusted user input is passed. The vendored
+   Toastify-JS library itself uses `escapeMarkup` by default; only the local
+   engine bypasses it.
 
 5. **`action.split(".")`**: In `notify.py`, the callback action is split on
-   the first `.` only (`split(".", 1)`). Service names cannot contain dots,
-   so this is correct.
+   every `.` (`split(".")`). Actions with more than one dot (e.g.,
+   `"light.turn_on.foo"`) raise a `ValueError`. Service names cannot contain
+   dots, so this is the original 1:1 behavior — not changed.
 
 6. **YAML-only configuration**: There is no `config_flow.py`; the service is
    configured via `configuration.yaml` only.
