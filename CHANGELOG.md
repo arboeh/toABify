@@ -7,31 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [2.0.3] - 2026-10-11
 
-### Zusammenfassung
+### Summary
 
-Wartungsrelease: Entfernung von totem Code, Verbesserung der Testsuite, Versionierung, und kritische Bugfixes.
+Maintenance release: removed dead code, improved test coverage, increased pytest timeout, and critical bugfixes for notify service registration.
 
 ### Bugfixes
 
-- **`__init__.py`**: `async_setup_entry` ruft nun `discovery.async_load_platform` auf, um die `notify`-Plattform zu registrieren. Ohne diesen Aufruf wurde `notify.toabify` nicht als Service in Home Assistant angelegt.
-- **`__init__.py`**: `async_unload_entry` entfernt nun den Service via `hass.services.async_remove("notify", DOMAIN)`.
-- **`notify.py`**: `async_get_service` erhalten — erforderlich für die Plattform-Registrierung durch HA's Notify-Komponente.
-- **`manifest.json`**: `codeowner` → `codeowners` (Plural, HA-konform); `config_flow: true` hinzugefügt; `notify` zu `after_dependencies` hinzugefügt.
-- **`strings.json`**: Ungültiger `configuration`-Schlüssel entfernt (verursacht hassfest-Fehler).
+- **`__init__.py`**: `async_setup_entry` now calls `discovery.async_load_platform` to register the `notify` platform. Without this call, the `notify.toabify` service was not registered in Home Assistant.
+- **`__init__.py`**: `async_unload_entry` now removes the notify service via `hass.services.async_remove("notify", DOMAIN)`.
+- **`notify.py`**: Restored `async_get_service` — required by Home Assistant's notify platform to instantiate the service.
+- **`manifest.json`**: Fixed `codeowner` → `codeowners` (plural); added `config_flow: true`; added `notify` to `after_dependencies`.
+- **`strings.json`**: Removed invalid `configuration` key (caused hassfest validation error).
 
-### Geändert
+### Changed
 
-- **`__init__.py`**: Entfernt `CONFIG_SCHEMA` und `async_setup` (veraltete YAML-Kompatibilität, da Integration ausschließlich über Config-Entry-Einrichtung verwendet wird).
-- **`notify.py`**: Vereinfacht Aktionsvalidierung — `action or ""` durch direkte `str`-Prüfung ersetzt.
-- **`tests/conftest.py`**: No-op-Abstimmung für `pytest_socket.disable_socket` auf Windows.
-- **`requirements_test.txt`**: `pytest-timeout` hinzugefügt.
-- **`pyproject.toml`**: Globaler Test-Timeout auf 600 Sekunden konfiguriert.
-- **`manifest.json`**: Versionsnummer auf `2.0.3` erhöht.
+- **`__init__.py`**: Removed `CONFIG_SCHEMA` and `async_setup` — dead YAML compatibility code, since the integration uses config-entry setup exclusively.
+- **`notify.py`**: Simplified action validation — `action or ""` replaced by direct `str` type check.
+- **`tests/conftest.py`**: Added Windows no-op for `pytest_socket.disable_socket`.
+- **`requirements_test.txt`**: Added `pytest-timeout`.
+- **`pyproject.toml`**: Configured 600-second global test timeout.
+- **`manifest.json`**: Version bumped to `2.0.3`.
 
-### Hinzugefügt
+### Added
 
-- **`tests/test_init.py`**: Tests `test_no_yaml_setup_dead_code` und `test_setup_entry_loads_notify_platform` zur Verifikation der Code-Entfernung und Plattform-Registrierung.
-- **`tests/test_notify.py`**: Tests `test_async_get_service_returns_service` und `test_non_string_action_no_crash` zur Abdeckung neuer Edge-Cases.
+- **`tests/test_init.py`**: Tests `test_no_yaml_setup_dead_code` and `test_setup_entry_loads_notify_platform` for dead code verification and platform registration.
+- **`tests/test_notify.py`**: Tests `test_async_get_service_returns_service` and `test_non_string_action_no_crash` for edge-case coverage.
 
 ## [2.0.2] - 2026-10-11
 
@@ -82,14 +82,14 @@ with SHA-256 verification.
 
 ### Changed
 
-- **Domain rename**: `toastify` → `toabify` in all new code.
-- **Directory structure**: `custom_components/toastify/` → `custom_components/toabify/`.
+- **Domain rename**: `toastify` -> `toabify` in all new code.
+- **Directory structure**: `custom_components/toastify/` -> `custom_components/toabify/`.
 - **`__init__.py`**: async_setup uses `const.py` for all protocol identifiers;
   static path fixed to `custom_components/toabify/dist`.
-- **`notify.py`**: `get_service` (sync) → `async_get_service` (async);
-  `send_message` (sync) → `async_send_message` (async);
+- **`notify.py`**: `get_service` (sync) -> `async_get_service` (async);
+  `send_message` (sync) -> `async_send_message` (async);
   removed `run_callback_threadsafe`; uses `const.py` defaults.
-- **`notify.py`**: `action.split(".", 1)` → `action.split(".")` — restores original
+- **`notify.py`**: `action.split(".", 1)` -> `action.split(".")` — restores original
   1:1 behavior; actions with more than one dot raise `ValueError`.
 - **import cleanup**: `from __future__ import annotations` added to all Python modules.
 
@@ -127,7 +127,6 @@ with SHA-256 verification.
   input is passed). The vendored Toastify-JS library uses `escapeMarkup` by default.
 - `action.split(".")` in `notify.py` splits on every `.` (not just the first).
   Actions with more than one dot raise a `ValueError`.
-- Configuration is YAML-only; no `config_flow.py`.
 
 ## [1.0.0] - Prior release
 
