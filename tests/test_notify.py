@@ -308,6 +308,7 @@ async def test_handle_callback_dict_passes_none_to_event(hass, enable_custom_int
                 "action": "light.turn_on",
                 "action_data": {"entity_id": "light.test"},
             },
+            "duration": 0,
         },
     )
     await hass.async_block_till_done()

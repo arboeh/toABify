@@ -23,6 +23,9 @@ bump for the toABify repository.
 - **`const.py`**: `DEFAULT_BUTTON_LABEL` changed from `"VOIR"` to `"CLOSE"`
   (consistent across code, tests, and documentation).
 - **`manifest.json`**: Version bumped to `2.0.1`.
+- **`toast_engine.js`**: All French comments and UI text translated to English
+  (themes, error messages, button labels, console logs).
+- **`scripts/vendor_hashes.txt`**: Updated SHA-256 hash for `toast_engine.js`.
 
 ## [2.0.0] - 2026-10-11
 

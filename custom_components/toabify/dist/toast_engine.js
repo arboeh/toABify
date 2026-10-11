@@ -1,5 +1,5 @@
 (function() {
-    // Chargement CSS
+    // CSS Loading
     if (!document.getElementById('toastify-css')) {
         const link = document.createElement('link');
         link.id = 'toastify-css';
@@ -14,7 +14,7 @@
                 50% { opacity: 0.2; }
                 100% { opacity: 1; }
             }
-            /* L'animation s'applique uniquement à l'enfant (le label) */
+            /* The animation applies only to the child element (the label) */
             .toast-btn-loading .btn-label-text {
                 animation: toast-label-pulse 0.8s infinite ease-in-out !important;
             }
@@ -26,7 +26,7 @@
         document.head.appendChild(style);
     }
 
-    // Chargement JS
+    // JS Loading
     if (typeof Toastify === "undefined") {
         const script = document.createElement("script");
         script.src = "/toastify_lib/toastify.js";
@@ -44,7 +44,7 @@
         initToastify();
     }
 
-    // Vérification de la disponibilité de l'objet hass
+    // Check for hass object availability
     function initToastify() {
         const checkHass = setInterval(() => {
             const main = document.querySelector("home-assistant");
@@ -55,7 +55,7 @@
         }, 1000);
     }
 
-    // Thèmes de notifications prédéfinies
+    // Predefined notification themes
     const TOAST_THEMES = {
         "success": "#00b09b",
         "info": "#03a9f4",
@@ -65,32 +65,32 @@
         "default": "rgba(50, 50, 50, 0.9)"
     };
 
-    // Fonction pour déterminer si le message doit être écrit en noir ou en blanc
-    // en fonction du thème du toast
+    // Function to determine if the toast message should be black or white
+    // based on the toast theme
     function getContrastColor(hexColor) {
         if (!hexColor || hexColor.includes("gradient")) return "#ffffff";
         
-        // Si thème RGBA ou RGB
+        // If RGBA or RGB theme
         if (hexColor.startsWith("rgba") || hexColor.startsWith("rgb")) {
             return "#ffffff";
         }
 
-        // Conversion Hex en RGB
+        // Hex to RGB conversion
         const hex = hexColor.replace("#", "");
         const r = parseInt(hex.substr(0, 2), 16);
         const g = parseInt(hex.substr(2, 2), 16);
         const b = parseInt(hex.substr(4, 2), 16);
         
-        // Calcul de la luminosité (formule standard YIQ)
+        // Brightness calculation (standard YIQ formula)
         const yiq = ((r * 299) + (g * 587) + (b * 114)) / 1000;
         return (yiq >= 128) ? "#000000" : "#ffffff";
     }
 
-    // Gestionnaire d'actions (URL ou Service HA)
+    // Action handler (URL or HA Service)
     async function executeAction(actionObj) {
         if (!actionObj) return false;
 
-        // On gère si c'est une simple string (compatibilité) ou un objet
+        // Handle both simple string (for compatibility) and object
         const action = (typeof actionObj === 'string') ? actionObj.trim() : actionObj.action?.trim();
         const serviceData = actionObj.action_data || {};
 
@@ -101,7 +101,7 @@
             window.open(action, "_blank");
             return true;
         } 
-        // Appel de service Home Assistant
+        // Home Assistant service call
         else if (action.includes(".")) {
             const [domain, service] = action.split(".");
             const hass = document.querySelector("home-assistant")?.hass;
@@ -110,7 +110,7 @@
                     await hass.callService(domain, service, serviceData);
                     return true;
                 } catch (e) {
-                    console.error("[Toastify] Erreur service:", e);
+                    console.error("[Toastify] Service error:", e);
                     return false;
                 }
             }
@@ -133,7 +133,7 @@
             const finalColor = TOAST_THEMES[colorInput] || d.color || TOAST_THEMES["default"];
             const textColor = getContrastColor(finalColor);
 
-            // Container du toast
+            // Toast container
             const container = document.createElement("div");
             container.style.display = "flex";
             container.style.flexDirection = "row";
@@ -165,7 +165,7 @@
                 container.appendChild(iconElement);
             }
 
-            // Container pour le Texte et le Bouton
+            // Container for text and button
             const textContainer = document.createElement("div");
             textContainer.style.display = "flex";
             textContainer.style.flexDirection = "column";
@@ -190,7 +190,7 @@
                 close: d.close === true || d.close === "true",
                 gravity: d.gravity || "top",
                 position: d.position || "right",
-                // avatar: d.icon || "", // Ajouté au node
+                    // avatar: d.icon || "", // Added to node
                 stopOnFocus: true,
                 oldestFirst: d.oldestFirst === true || d.oldestFirst === "true",
                 style: { 
@@ -212,7 +212,7 @@
                 },
             });
 
-            // Bouton
+            // Button
             if (d.onClick) {
                 const btn = document.createElement("button");
                 const btnBorder = textColor === "#000000" ? "rgba(0,0,0,0.1)" : "rgba(255,255,255,0.25)";
@@ -246,7 +246,7 @@
                     const success = await executeAction(d.onClick);
 
                     if (hasFeedback) {
-                        // On laisse la pulsation au moins 500ms pour que ce soit visible
+                        // Keep the pulse for at least 500ms so it's visible
                         setTimeout(() => {
                             btn.classList.remove("toast-btn-loading");
                             labelSpan.style.transition = "opacity 0.2s ease";
@@ -254,9 +254,9 @@
                             
                             setTimeout(() => {
                                 if (success) {
-                                    btn.innerHTML = `<span class="btn-label-text"><ha-icon icon="mdi:check" style="--mdc-icon-size: 16px; margin-right: 5px;"></ha-icon> EFFECTUÉ</span>`;
+                                    btn.innerHTML = `<span class="btn-label-text"><ha-icon icon="mdi:check" style="--mdc-icon-size: 16px; margin-right: 5px;"></ha-icon> DONE</span>`;
                                 } else {
-                                    btn.innerHTML = `<span class="btn-label-text"><ha-icon icon="mdi:alert-circle" style="--mdc-icon-size: 16px; margin-right: 5px;"></ha-icon> ERREUR</span>`;
+                                    btn.innerHTML = `<span class="btn-label-text"><ha-icon icon="mdi:alert-circle" style="--mdc-icon-size: 16px; margin-right: 5px;"></ha-icon> ERROR</span>`;
                                     btn.style.background = "rgba(255, 0, 0, 0.3)";
                                 }
 
@@ -290,14 +290,14 @@
     }
 
 
-    // Abonnement via la commande WebSocket personnalisée
+    // Subscription via custom WebSocket command
     function setupListener(hass) {
         hass.connection.subscribeMessage(
             (message) => { createToast(message); },
             { type: "toastify/subscribe" }
         ).then(
-            null, // Silencieux si tout va bien
-            (err) => console.error("[Toastify] Le tunnel a été refusé par le serveur", err)
+            null, // Silent on success
+            (err) => console.error("[Toastify] Connection refused by server", err)
         );
     }
 })();
