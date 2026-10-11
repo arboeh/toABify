@@ -2,7 +2,7 @@
   "domain": "toabify",
   "name": "toABIfy",
   "after_dependencies": ["http"],
-  "codeowner": ["@arboeh"],
+  "codeowners": ["@arboeh"],
   "documentation": "https://github.com/arboeh/toABify",
   "integration_type": "service",
   "iot_class": "local_push",
