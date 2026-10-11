@@ -1,79 +1,84 @@
-# Toastify 🍞
+# toABify 🍞
 
-Intégration Toastify pour Home Assistant permettant d'afficher de superbes notifications de type "Toast" sur votre interface, en utilisant la bibliothèque [Toastify-js](https://apvarun.github.io/toastify-js/).
+**English | [Deutsch](README.de.md)**
 
-## ✨ Caractéristiques
-- **HACS Ready** : Installation et mises à jour simplifiées.
-- **Personnalisable** : Couleur, durée, position, icônes (avatars) et bouton de fermeture.
-- **Contrastes Dynamiques** : Le texte s'adapte automatiquement (Noir ou Blanc) pour rester parfaitement lisible selon la couleur de fond choisie.
-- **Visibilité Intelligente** : Choisissez d'afficher vos notifications uniquement sur le Dashboard ou dans tout Home Assistant (menus paramètres/systèmes, journaux, historique, etc.).
-- **Actions Interactives** : Cliquez sur un toast pour ouvrir une URL ou **appeler un service Home Assistant** (ex: éteindre une lumière ou rediriger vers un dashboard).
-- **Utilise le service Notify** : Totalement compatible avec le système de notification natif de Home Assistant.
+A Home Assistant integration that displays beautiful toast-style notifications on your interface, powered by [Toastify-JS](https://apvarun.github.io/toastify-js/).
 
-![Aperçu de Toastify](dist/images/toastify1.jpg)
+> **Based on HA-Toastify by TidjyDev (MIT)**. toABify is not an official fork: it shares the same internal architecture (identifiers `toastify_event`, `toastify/subscribe`, `/toastify_lib`) but is a standalone project. **Do not install toABify alongside HA-Toastify** - the internal identifiers would conflict.
+
+## ✨ Features
+- **HACS Ready**: Simple installation and updates.
+- **Customizable**: Color, duration, position, close button, icons/avatars.
+- **Dynamic Contrast**: Text automatically switches between black and white for optimal readability against any background color.
+- **Smart Visibility**: Show notifications only on the dashboard or across all of Home Assistant (settings, logs, history, etc.).
+- **Interactive Actions**: Click a toast to open a URL or **call a Home Assistant service** (e.g., turn off a light, navigate to a dashboard).
+- **Native Notify Service**: Fully compatible with Home Assistant's built-in notification system.
+
+![toABify Preview](images/screenshot.jpg)
 
 ## 📦 Installation
 
-### 1. Via HACS (Recommandé)
-1. Ouvrez **HACS** dans votre instance Home Assistant.
-2. Cliquez sur les 3 points en haut à droite > **Dépôts personnalisés**.
-3. Ajoutez l'URL de ce dépôt : `https://github.com/TidjyDev/HA-Toastify`.
-4. Sélectionnez la catégorie **Intégration** et cliquez sur **Ajouter**.
-5. Recherchez "Toastify" et installez-le.
-6. **Redémarrez Home Assistant.**
+### 1. Via HACS (Recommended)
+1. Open **HACS** in your Home Assistant instance.
+2. Click the three dots in the top-right corner → **Custom repositories**.
+3. Add this repository URL: `https://github.com/arboeh/toABify`.
+4. Select the **Integration** category and click **Add**.
+5. Search for "toABify" and install it.
+6. **Restart Home Assistant.**
 
 ### 2. Configuration
-Ajoutez ces lignes à votre fichier `configuration.yaml` pour activer le moteur d'injection et déclarer le service de notification :
+Add the following to your `configuration.yaml` to register the notification service:
 
 ```yaml
-# configuration.yaml : Déclaration du service de notifications toast
+# configuration.yaml: Notification service declaration
 notify:
-  - platform: toastify
-    name: toastify
+  - platform: toabify
+    name: toabify
 ```
 
-## 🛠️ Paramètres du service (`data:`)
+## 🛠️ Service Parameters (`data:`)
 
-| Paramètre | Description | Défaut |
+| Parameter | Description | Default |
 | :--- | :--- | :--- |
-| `message` | Le texte à afficher dans la notification. | (Requis) |
-| `color` | Thème (`success`, `info`, `warning`, `error`) ou code Hex (`#FFFFFF`). | `info` |
-| `duration` | Durée en ms (`3000` = 3s). Utilisez `-1` pour un toast persistant. | `3000` |
-| `position` | Alignement horizontal : `left`, `center` ou `right`. | `right` |
-| `gravity` | Alignement vertical : `top` ou `bottom`. | `top` |
-| `close` | Affiche une croix de fermeture (`true` / `false`). | `false` |
-| `icon` | URL d'une image ou d'un avatar (ex: `/local/avatar.png`) ou icône MDI. | 
-| `oldestFirst` | Ordre des notifications lors de l'empilement | `true` |
-| `visibility` | `dashboard` (Lovelace seul) ou `all` (Partout dans HA). | `dashboard` |
-| `onClick` | Action au clic sur le toast : Appel de service HA (ex: `action: light.turn_off`) ou URL (/lovelace/0). | (ex: switch.toggle) |
-| `callback` | Action à la fermeture du toast : Appel de service HA (ex: light.turn_off) ou URL (/lovelace/0). | (ex: light.turn_on) |
-| `action_data` | Données pour l'appel de services HA. Appelé en paramètre `onClick` ou `callback`. | Dictionnaire YAML (ex: `entity_id: light.salon`). |
-| `button_label` | Label du bouton `onClick` | "Voir"
+| `message` | Text to display in the notification. | *(required)* |
+| `color` | Theme (`success`, `info`, `warning`, `error`) or hex code (`#FFFFFF`). | `info` |
+| `duration` | Duration in ms (`3000` = 3s). Use `-1` for a persistent toast. `0` falls back to `5000`. | `5000` |
+| `position` | Horizontal alignment: `left`, `center`, or `right`. | `right` |
+| `gravity` | Vertical alignment: `top` or `bottom`. | `top` |
+| `close` | Show a close button (`true` / `false`). | `false` |
+| `icon` | Image URL or avatar (e.g., `/local/avatar.png`) or MDI icon. | *(empty)* |
+| `oldestFirst` | Stack order for notifications. | `true` |
+| `visibility` | `dashboard` (Lovelace only) or `all` (everywhere in HA). | `dashboard` |
+| `onClick` | Click action: HA service call object (`action`, `action_data`, `label`, `feedback`) or URL/path string (e.g., `/lovelace/0`). | *(none)* |
+| `callback` | Action on toast dismissal: HA service call object (`action`, `action_data`) or URL/path string (e.g., `/lovelace/0`). | *(none)* |
+| `action_data` | Data for HA service calls. Used within `onClick` or `callback`. | *(dict)* |
+| `button_label` | Label for the onClick button. | `VOIR` |
 
+> **Note**: `visibility`, `action_data`, and `button_label` are toABify-specific. For all other parameters, see the upstream Toastify-JS docs: https://github.com/apvarun/toastify-js
 
-Hormis pour les paramètre `visibility`, `action_data` et `button_label` propres à Home Assistant, vous pouvez vous référer à la documentation de la librairie Toastify : https://github.com/apvarun/toastify-js pour la définition complète des paramètres.
+> **Technical note**: `button_label` is sent to the frontend but Toastify-JS v1.12.0 does not display it (the engine uses `onClick.label` instead). Similarly, `oldestFirst` is transmitted but has no visible effect because the library's default is already `true`.
 
-## 💡 Exemples YAML
+## 💡 YAML Examples
 
-### Notification de succès (Vert avec gradient)
-Parfait pour confirmer qu'une automatisation s'est bien déroulée.
+### Success Notification (Green with Gradient)
+Perfect for confirming successful automation execution.
 ```yaml
-service: notify.toastify
+service: notify.toabify
 data:
-  message: "Alarme activée avec succès"
+  message: "Alarm activated successfully"
   data:
     color: "success"
     position: "center"
     duration: 5000
 ```
 
-### Notification d'alerte partout dans Home Assistant (Rouge avec bouton fermer)
-Idéal pour les erreurs ou les alertes de sécurité qui nécessitent une attention immédiate.
-Visible même dans les menus de configuration.
+### Full-HA Alert (Red with Close Button)
+Ideal for errors or security alerts requiring immediate attention.
+Visible even in configuration menus.
 ```yaml
-service: notify.toastify
+service: notify.toabify
 data:
-  message: "⚠️ Fuite d'eau détectée dans la cuisine !"
+  message: "⚠️ Water leak detected in the kitchen!"
   data:
     color: "#ff5f6d"
     close: true
@@ -82,42 +87,41 @@ data:
     visibility: "all"
 ```
 
-### Notification avec Icône (Avatar)
-Pour savoir qui ou quoi a déclenché l'événement.
+### Notification with Avatar Icon
+Know who or what triggered the event.
 ```yaml
-service: notify.toastify
+service: notify.toabify
 data:
-  message: "Tidjy est arrivé à la maison"
+  message: "Alex just arrived home"
   data:
-    icon: "/local/img/tidjy_avatar.png"
+    icon: "/local/img/alex_avatar.png"
     color: "#2196F3"
     duration: 6000
 ```
 
-### Appel de service au clic (Fermer le portail)
-Cet exemple montre comment déclencher une action physique dans ta maison simplement en cliquant sur la notification.
+### Service Call on Click (Close the Gate)
+Click a notification to trigger a physical action.
 ```yaml
-service: notify.toastify
+service: notify.toabify
 data:
-  message: "Le portail est resté ouvert ! Cliquer pour fermer."
+  message: "The gate was left open! Click to close."
   data:
     color: warning
-    onClick: 
+    onClick:
       action: cover.close_cover
       action_data:
-        entity_id: cover.portail_principal
+        entity_id: cover.gate_main
     visibility: all
     close: true
     duration: -1
 ```
 
-### Lien de navigation (Ouvrir les caméras)
-Idéal pour rediriger instantanément l'utilisateur vers une vue spécifique de son interface Lovelace lors d'un événement.
-
+### Navigation Link (Open Cameras)
+Redirect to a specific Lovelace view when an event occurs.
 ```yaml
-service: notify.toastify
+service: notify.toabify
 data:
-  message: "Mouvement détecté au jardin 🚨"
+  message: "🚨 Motion detected in the garden"
   data:
     color: "error"
     onClick: "/lovelace-mobile/cameras"
@@ -127,4 +131,6 @@ data:
 ```
 
 ---
-*Développé avec ❤️ pour la communauté Home Assistant.*
+
+Based on [HA-Toastify](https://github.com/TidjyDev/HA-Toastify) by TidjyDev (MIT).
+Uses [Toastify-JS](https://github.com/apvarun/toastify-js) by apvarun (MIT).

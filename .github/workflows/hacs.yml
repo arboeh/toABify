@@ -1,0 +1,23 @@
+name: HACS
+
+on:
+  push:
+    branches: [main, "chore/**"]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  hacs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: HACS validation
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: hacs/action@main
+        with:
+          category: integration

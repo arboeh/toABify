@@ -1,0 +1,12 @@
+[tool.ruff]
+line-length = 100
+target-version = "py314"
+extend-exclude = ["custom_components/toabify/dist", ".kilocode"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "N", "UP", "B", "SIM", "ASYNC", "RUF"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+pythonpath = ["."]

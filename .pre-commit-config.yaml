@@ -1,0 +1,20 @@
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.16.1
+    hooks:
+      - id: ruff
+        args: [--fix]
+        exclude: ^custom_components/toabify/dist/
+      - id: ruff-format
+        exclude: ^custom_components/toabify/dist/
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: check-json
+        exclude: ^custom_components/toabify/dist/
+      - id: check-yaml
+        exclude: ^custom_components/toabify/dist/
+      - id: end-of-file-fixer
+        exclude: ^custom_components/toabify/dist/
+      - id: trailing-whitespace
+        exclude: ^custom_components/toabify/dist/
