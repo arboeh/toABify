@@ -1,0 +1,13 @@
+{
+  "name": "toabify",
+  "version": "1.0.0",
+  "description": "**English | [Deutsch](README.de.md)**",
+  "type": "module",
+  "scripts": {
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "happy-dom": "^15.11.0",
+    "vitest": "^3.0.0"
+  }
+}

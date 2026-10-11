@@ -2,20 +2,27 @@
 
 from __future__ import annotations
 
+import logging
+
 import voluptuous as vol
 from homeassistant.components import websocket_api
-from homeassistant.components.frontend import add_extra_js_url
+from homeassistant.components.frontend import add_extra_js_url, remove_extra_js_url
 from homeassistant.components.http import StaticPathConfig
-from homeassistant.core import HomeAssistant, callback
-from homeassistant.helpers.typing import ConfigType
+from homeassistant.config_entries import ConfigEntry
+from homeassistant.core import Event, HomeAssistant, callback
+from homeassistant.exceptions import ConfigEntryNotReady
 
 from .const import (
+    DOMAIN,
     EVENT_TOAST,
     STATIC_PATH,
     STATIC_URL_PATH,
     TOAST_ENGINE_JS,
     WS_TYPE_SUBSCRIBE,
 )
+from .coordinator import ToastifyCoordinator
+
+_LOGGER = logging.getLogger(__name__)
 
 
 @websocket_api.websocket_command(
@@ -24,26 +31,93 @@ from .const import (
     }
 )
 @callback
-def websocket_subscribe_toast(hass, connection, msg):
+def websocket_subscribe_toast(
+    hass: HomeAssistant,
+    connection: websocket_api.ActiveConnection,
+    msg: dict,
+) -> None:
+    """Subscribe to toast notifications via WebSocket."""
+
     @callback
-    def forward_toast(event):
+    def forward_toast(event: Event) -> None:
         connection.send_message(websocket_api.event_message(msg["id"], event.data))
 
     connection.subscriptions[msg["id"]] = hass.bus.async_listen(EVENT_TOAST, forward_toast)
     connection.send_result(msg["id"])
 
+    _LOGGER.info("WebSocket subscription established for toast notifications")
 
-async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
-    """Register static path, WebSocket command, and extra JS URL."""
-    toast_path_config = StaticPathConfig(
-        url_path=STATIC_URL_PATH,
-        path=hass.config.path(STATIC_PATH),
-        cache_headers=False,
-    )
-    await hass.http.async_register_static_paths([toast_path_config])
+
+async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+    """Register static path, WebSocket command, and extra JS URL.
+
+    Args:
+        hass: HomeAssistant instance
+        entry: ConfigEntry for this integration
+
+    Returns:
+        True if setup succeeded
+
+    Raises:
+        ConfigEntryNotReady: If static path registration fails
+    """
+    _LOGGER.debug("Setting up toABify integration")
+
+    coordinator = ToastifyCoordinator(hass, entry)
+    try:
+        toast_path_config = StaticPathConfig(
+            url_path=STATIC_URL_PATH,
+            path=hass.config.path(STATIC_PATH),
+            cache_headers=False,
+        )
+        await hass.http.async_register_static_paths([toast_path_config])
+        _LOGGER.debug("Static path registered: %s", STATIC_URL_PATH)
+    except Exception as err:
+        _LOGGER.error("Failed to register static path for toABify: %s", err)
+        raise ConfigEntryNotReady(f"Failed to register static path: {err}") from err
 
     websocket_api.async_register_command(hass, websocket_subscribe_toast)
-
     add_extra_js_url(hass, TOAST_ENGINE_JS)
 
+    coordinator.async_register_static_path(STATIC_URL_PATH)
+    coordinator.async_register_ws_command(WS_TYPE_SUBSCRIBE)
+    coordinator.async_register_js_url(TOAST_ENGINE_JS)
+
+    hass.data.setdefault(DOMAIN, {})
+    hass.data[DOMAIN][entry.entry_id] = coordinator
+
+    _LOGGER.info("toABify integration setup complete")
+    return True
+
+
+async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+    """Unload a config entry.
+
+    Args:
+        hass: HomeAssistant instance
+        entry: ConfigEntry to unload
+
+    Returns:
+        True if unload succeeded
+    """
+    _LOGGER.debug("Unloading toABify integration")
+
+    if DOMAIN in hass.data and entry.entry_id in hass.data[DOMAIN]:
+        coordinator: ToastifyCoordinator = hass.data[DOMAIN].pop(entry.entry_id)
+
+        # Remove the extra JS URL registered via add_extra_js_url
+        for js_url in coordinator.js_urls:
+            try:
+                remove_extra_js_url(hass, js_url)
+            except ValueError:
+                _LOGGER.debug("JS URL %s was not registered", js_url)
+
+        # Note: WebSocket commands and static paths are not explicitly
+        # unregisterable in HA without a full reload. WebSocket commands
+        # persist on the hass object, but the coordinator tracks what was
+        # registered so state is consistent within this entry's lifecycle.
+        _LOGGER.info("toABify integration unloaded")
+        return True
+
+    _LOGGER.warning("toABify config entry %s not found in data", entry.entry_id)
     return True

@@ -13,7 +13,15 @@ env/
 RELEASE_NOTES.md
 *.egg-info/
 .eggs/
+/build/
 /dist/
+
+# Node.js (JS test infrastructure)
+node_modules/
+package-lock.json
+yarn.lock
+.npm-debug.log*
+.nyc_output/
 
 # HACS
 hacs_*.json
