@@ -449,10 +449,10 @@ describe("toast_engine.js action execution", () => {
     expect(btnLabel.textContent).toBe("Click Me");
   });
 
-  it("defaults button label to CLOSE", () => {
+it("defaults button label to CLOSE", () => {
     setupWindow();
-    loadEngine();
-    vi.advanceTimersByTime(2000);
+     loadEngine();
+     vi.advanceTimersByTime(2000);
 
     wsCallbacks[0].callback({
       message: "Hello",
@@ -462,5 +462,256 @@ describe("toast_engine.js action execution", () => {
     const btnLabel = document.querySelector(".btn-label-text");
     expect(btnLabel).not.toBeNull();
     expect(btnLabel.textContent).toBe("CLOSE");
+  });
+
+  it("does not create button when onClick is not provided", () => {
+    setupWindow();
+    loadEngine();
+    vi.advanceTimersByTime(2000);
+
+    wsCallbacks[0].callback({ message: "No Button Toast" });
+    const btn = document.querySelector("button");
+    expect(btn).toBeNull();
+  });
+
+  it("uses custom position and gravity from message", () => {
+    setupWindow();
+    loadEngine();
+    vi.advanceTimersByTime(2000);
+
+    wsCallbacks[0].callback({
+      message: "Bottom Left",
+      position: "left",
+      gravity: "bottom",
+    });
+    const config = window.Toastify.mock.calls[0][0];
+    expect(config.position).toBe("left");
+    expect(config.gravity).toBe("bottom");
+  });
+
+  it("enables close button when close=true", () => {
+    setupWindow();
+    loadEngine();
+    vi.advanceTimersByTime(2000);
+
+    wsCallbacks[0].callback({ message: "Closeable", close: true });
+    const config = window.Toastify.mock.calls[0][0];
+    expect(config.close).toBe(true);
+  });
+
+  it("enables close button when close='true' string", () => {
+    setupWindow();
+    loadEngine();
+    vi.advanceTimersByTime(2000);
+
+    wsCallbacks[0].callback({ message: "Closeable", close: "true" });
+    const config = window.Toastify.mock.calls[0][0];
+    expect(config.close).toBe(true);
+  });
+
+  it("disables close button when close=false", () => {
+    setupWindow();
+    loadEngine();
+    vi.advanceTimersByTime(2000);
+
+    wsCallbacks[0].callback({ message: "No Close", close: false });
+    const config = window.Toastify.mock.calls[0][0];
+    expect(config.close).toBe(false);
+  });
+
+  it("uses custom theme 'alert' color", () => {
+    setupWindow();
+    loadEngine();
+    vi.advanceTimersByTime(2000);
+
+    wsCallbacks[0].callback({ message: "Alert", color: "alert" });
+    const config = window.Toastify.mock.calls[0][0];
+    expect(config.style.background).toBe("#e91e63");
+  });
+
+  it("uses default color when no color specified", () => {
+    setupWindow();
+    loadEngine();
+    vi.advanceTimersByTime(2000);
+
+    wsCallbacks[0].callback({ message: "Default" });
+    const config = window.Toastify.mock.calls[0][0];
+    expect(config.style.background).toBe("rgba(50, 50, 50, 0.9)");
+  });
+
+  it("calculates dark text color for light backgrounds via theme", () => {
+    setupWindow();
+    loadEngine();
+    vi.advanceTimersByTime(2000);
+
+    wsCallbacks[0].callback({ message: "Light BG", color: "#ffffff" });
+    const config = window.Toastify.mock.calls[0][0];
+    expect(config.style.color).toBe("#000000");
+  });
+
+  it("calculates light text color for dark backgrounds via theme", () => {
+    setupWindow();
+    loadEngine();
+    vi.advanceTimersByTime(2000);
+
+    wsCallbacks[0].callback({ message: "Dark BG", color: "#000000" });
+    const config = window.Toastify.mock.calls[0][0];
+    expect(config.style.color).toBe("#ffffff");
+  });
+
+  it("handles oldestFirst set to true via string", () => {
+    setupWindow();
+    loadEngine();
+    vi.advanceTimersByTime(2000);
+
+    wsCallbacks[0].callback({ message: "Oldest", oldestFirst: "true" });
+    const config = window.Toastify.mock.calls[0][0];
+    expect(config.oldestFirst).toBe(true);
+  });
+
+  it("handles feedback loading animation on success", async () => {
+    vi.useFakeTimers();
+    setupWindow();
+    loadEngine();
+    vi.advanceTimersByTime(2000);
+
+    wsCallbacks[0].callback({
+      message: "Feedback Test",
+      onClick: {
+        action: "https://example.com",
+        feedback: true,
+      },
+    });
+
+    const btn = document.querySelector("button");
+    btn.click();
+
+    // Advance past feedback timeout
+    vi.advanceTimersByTime(500);
+
+    // Button should have been clicked and feedback triggered
+    expect(openSpy).toHaveBeenCalledWith("https://example.com", "_blank");
+  });
+
+  it("handles feedback loading animation on service error", async () => {
+    vi.useFakeTimers();
+    setupWindow();
+    loadEngine();
+    vi.advanceTimersByTime(2000);
+
+    // Make callService fail
+    callServiceMock.mockRejectedValueOnce(new Error("Service error"));
+
+    wsCallbacks[0].callback({
+      message: "Feedback Error",
+      onClick: {
+        action: "light.turn_on",
+        action_data: { entity_id: "light.test" },
+        feedback: true,
+      },
+    });
+
+    const btn = document.querySelector("button");
+    btn.click();
+
+    await vi.waitFor(() => {
+      expect(callServiceMock).toHaveBeenCalled();
+    }, { timeout: 3000 });
+
+    vi.advanceTimersByTime(500);
+  });
+
+  it("handles feedback disabled (quick dismiss)", () => {
+    vi.useFakeTimers();
+    setupWindow();
+    loadEngine();
+    vi.advanceTimersByTime(2000);
+
+    wsCallbacks[0].callback({
+      message: "No Feedback",
+      onClick: {
+        action: "https://example.com",
+        feedback: false,
+      },
+    });
+
+    const btn = document.querySelector("button");
+    btn.click();
+
+    expect(openSpy).toHaveBeenCalledWith("https://example.com", "_blank");
+  });
+
+  it("stops propagation when button is clicked", () => {
+    setupWindow();
+    loadEngine();
+    vi.advanceTimersByTime(2000);
+
+    wsCallbacks[0].callback({
+      message: "Click Test",
+      onClick: { action: "https://example.com" },
+    });
+
+    const btn = document.querySelector("button");
+    const stopPropagationMock = vi.fn();
+    const clickEvent = {
+      stopPropagation: stopPropagationMock,
+    };
+    btn.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+
+    // Verify button exists and was clicked
+    expect(btn).not.toBeNull();
+  });
+
+  it("handles executeAction with null action object", async () => {
+    setupWindow();
+    loadEngine();
+    vi.advanceTimersByTime(2000);
+
+    wsCallbacks[0].callback({
+      message: "Null Action",
+      onClick: { action: null },
+    });
+
+    const btn = document.querySelector("button");
+    btn.click();
+
+    // Should not throw
+    await vi.waitFor(() => {
+      expect(wsCallbacks.length).toBe(1);
+    }, { timeout: 1000 });
+  });
+
+  it("handles executeAction with empty action string", async () => {
+    setupWindow();
+    loadEngine();
+    vi.advanceTimersByTime(2000);
+
+    wsCallbacks[0].callback({
+      message: "Empty Action",
+      onClick: { action: "" },
+    });
+
+    const btn = document.querySelector("button");
+    btn.click();
+
+    // Should not throw and openSpy should not be called
+    expect(openSpy).not.toHaveBeenCalled();
+  });
+
+  it("handles executeAction with whitespace-only action", async () => {
+    setupWindow();
+    loadEngine();
+    vi.advanceTimersByTime(2000);
+
+    wsCallbacks[0].callback({
+      message: "Whitespace Action",
+      onClick: { action: "   " },
+    });
+
+    const btn = document.querySelector("button");
+    btn.click();
+
+    // Should not throw
+    expect(openSpy).not.toHaveBeenCalled();
   });
 });

@@ -18,27 +18,33 @@ from .const import (
     DEFAULT_DURATION_EVENT,
     DEFAULT_GRAVITY,
     DEFAULT_POSITION,
+    DEFAULT_TIMEOUT,
     DEFAULT_VISIBILITY,
     EVENT_TOAST,
 )
 
 _LOGGER = logging.getLogger(__name__)
 
-# Valid service action pattern: domain.service (alphanumeric, underscore)
 _VALID_SERVICE_RE = re.compile(r"^[a-z_][a-z0-9_]*\.[a-z_][a-z0-9_]*$")
 
-# Max duration to prevent abuse (10 minutes)
 _MAX_DURATION_MS: int = 600_000
+
+_CALLBACK_DICT_SCHEMA = vol.Schema(
+    {
+        vol.Optional("action"): str,
+        vol.Optional("action_data", default={}): dict,
+    },
+    extra=vol.PREVENT_EXTRA,
+)
 
 _NOTIFY_DATA_SCHEMA = vol.Schema(
     {
-        vol.Optional("duration", default=DEFAULT_DURATION_EVENT): vol.All(
-            vol.Coerce(int), vol.Range(min=0, max=_MAX_DURATION_MS)
-        ),
+        vol.Optional("duration"): vol.All(vol.Coerce(int), vol.Range(min=-1, max=_MAX_DURATION_MS)),
         vol.Optional("close", default=False): bool,
         vol.Optional("position", default=DEFAULT_POSITION): vol.In(["left", "right", "center"]),
         vol.Optional("gravity", default=DEFAULT_GRAVITY): vol.In(["top", "bottom", "center"]),
         vol.Optional("icon", default=""): str,
+        vol.Optional("avatar", default=""): str,
         vol.Optional("color", default=DEFAULT_COLOR): vol.In(
             ["success", "info", "warning", "error", "alert", "default"]
         ),
@@ -46,7 +52,7 @@ _NOTIFY_DATA_SCHEMA = vol.Schema(
         vol.Optional("button_label", default=DEFAULT_BUTTON_LABEL): str,
         vol.Optional("oldestFirst", default=True): bool,
         vol.Optional("onClick"): dict,
-        vol.Optional("callback"): vol.Any(str, dict),
+        vol.Optional("callback"): vol.Any(str, _CALLBACK_DICT_SCHEMA),
     },
     extra=vol.PREVENT_EXTRA,
 )
@@ -88,15 +94,15 @@ class ToastifyNotificationService(BaseNotificationService):
         if isinstance(callback_data, str) and callback_data.startswith(("/", "http")):
             js_callback = callback_data
 
-        duration = data["duration"]  # Schema-validated default DEFAULT_DURATION_EVENT
+        duration = data.get("duration")  # May be None if not provided
 
         event_data = {
             "message": message,
-            "duration": duration,
+            "duration": duration if duration is not None else DEFAULT_DURATION_EVENT,
             "close": data["close"],
             "position": data.get("position", DEFAULT_POSITION),
             "gravity": data.get("gravity", DEFAULT_GRAVITY),
-            "icon": data.get("icon", data.get("avatar", "")),
+            "icon": data.get("icon") or data.get("avatar", ""),
             "color": data.get("color", DEFAULT_COLOR),
             "visibility": data.get("visibility", DEFAULT_VISIBILITY),
             "button_label": data.get("button_label", DEFAULT_BUTTON_LABEL),
@@ -109,9 +115,9 @@ class ToastifyNotificationService(BaseNotificationService):
             EVENT_TOAST, event_data, origin=EventOrigin.local, context=Context()
         )
 
-        self._handle_callback(callback_data, duration)
+        await self._handle_callback(callback_data, duration)
 
-    def _handle_callback(self, callback_data: dict | None, duration: int) -> None:
+    async def _handle_callback(self, callback_data: dict | None, duration: int | None) -> None:
         """Schedule a server-side service call if callback data specifies one.
 
         Validates the service action format to prevent injection attacks
@@ -126,26 +132,12 @@ class ToastifyNotificationService(BaseNotificationService):
 
         action = callback_data.get("action", "")
 
-        # Negative or zero duration means no timer should fire (e.g., -1 for persistent toast)
-        if not isinstance(action, str) or "." not in action:
+        if not isinstance(action, str) or not _VALID_SERVICE_RE.match(action or ""):
             _LOGGER.warning("Invalid callback action format: %s", action)
             return
 
-        if not _VALID_SERVICE_RE.match(action):
-            _LOGGER.warning(
-                "Callback action does not match valid service format: %s",
-                action,
-            )
-            return
-
-        if duration <= 0:
-            return  # No timer for non-positive duration
-
-        if not _VALID_SERVICE_RE.match(action):
-            _LOGGER.warning(
-                "Callback action does not match valid service format: %s",
-                action,
-            )
+        timer_duration = duration if duration is not None else DEFAULT_TIMEOUT
+        if timer_duration <= 0:
             return
 
         domain, service = action.split(".", 1)
@@ -153,16 +145,23 @@ class ToastifyNotificationService(BaseNotificationService):
         if not isinstance(service_params, dict):
             _LOGGER.warning("action_data must be a dict, got: %s", type(service_params))
             return
+        service_params = dict(service_params)
 
         async def execute_callback(_) -> None:
             try:
                 await self.hass.services.async_call(domain, service, service_params)
-            except Exception as err:
+            except (ServiceValidationError, ValueError) as err:
                 _LOGGER.error(
                     "Failed to execute callback service %s.%s: %s",
                     domain,
                     service,
                     err,
                 )
+            except Exception:
+                _LOGGER.exception(
+                    "Unexpected error executing callback service %s.%s",
+                    domain,
+                    service,
+                )
 
-        async_call_later(self.hass, duration / 1000, execute_callback)
+        async_call_later(self.hass, timer_duration / 1000, execute_callback)

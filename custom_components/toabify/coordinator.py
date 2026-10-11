@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
+from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 
@@ -29,12 +30,13 @@ class ToastifyCoordinator(DataUpdateCoordinator[None]):
     integration's registered resources and shared state.
     """
 
-    def __init__(self, hass: HomeAssistant) -> None:
+    def __init__(self, hass: HomeAssistant, config_entry: ConfigEntry | None = None) -> None:
         """Initialize the coordinator."""
         super().__init__(
             hass,
             logger=__name__,
             name="ToABify",
+            config_entry=config_entry,
         )
         self._state = IntegrationState()
 

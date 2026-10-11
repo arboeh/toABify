@@ -75,7 +75,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """
     _LOGGER.debug("Setting up toABify integration")
 
-    coordinator = ToastifyCoordinator(hass)
+    coordinator = ToastifyCoordinator(hass, entry)
     try:
         toast_path_config = StaticPathConfig(
             url_path=STATIC_URL_PATH,
