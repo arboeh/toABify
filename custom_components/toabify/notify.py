@@ -3,16 +3,12 @@
 from __future__ import annotations
 
 import logging
+import re
 
 import voluptuous as vol
-from homeassistant.components.notify import (
-    BaseNotificationService,
-    PLATFORM_SCHEMA,
-)
-from homeassistant.components.notify import async_reject_receipt
+from homeassistant.components.notify import BaseNotificationService
 from homeassistant.core import Context, EventOrigin, HomeAssistant
 from homeassistant.exceptions import ServiceValidationError
-from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.event import async_call_later
 from homeassistant.helpers.typing import ConfigType
 
@@ -29,10 +25,16 @@ from .const import (
 
 _LOGGER = logging.getLogger(__name__)
 
+# Valid service action pattern: domain.service (alphanumeric, underscore)
+_VALID_SERVICE_RE = re.compile(r"^[a-z_][a-z0-9_]*\.[a-z_][a-z0-9_]*$")
+
+# Max duration to prevent abuse (10 minutes)
+_MAX_DURATION_MS: int = 600_000
+
 _NOTIFY_DATA_SCHEMA = vol.Schema(
     {
         vol.Optional("duration", default=DEFAULT_TIMEOUT): vol.All(
-            vol.Coerce(int), vol.Range(min=0)
+            vol.Coerce(int), vol.Range(min=0, max=_MAX_DURATION_MS)
         ),
         vol.Optional("close", default=False): bool,
         vol.Optional("position", default=DEFAULT_POSITION): vol.In(
@@ -120,21 +122,50 @@ class ToastifyNotificationService(BaseNotificationService):
 
         self._handle_callback(callback_data, duration)
 
-    def _handle_callback(self, callback_data, duration: int) -> None:
-        """Schedule a server-side service call if callback data specifies one."""
+    def _handle_callback(self, callback_data: dict | None, duration: int) -> None:
+        """Schedule a server-side service call if callback data specifies one.
+
+        Validates the service action format to prevent injection attacks
+        and enforces a maximum duration limit.
+
+        Args:
+            callback_data: Dict containing 'action' and optional 'action_data'
+            duration: Delay in milliseconds before executing the callback
+        """
         if not isinstance(callback_data, dict):
             return
 
         action = callback_data.get("action", "")
-        if "." not in action or duration <= 0:
+        if not isinstance(action, str) or "." not in action or duration <= 0:
+            _LOGGER.warning(
+                "Invalid callback action format: %s", action
+            )
+            return
+
+        if not _VALID_SERVICE_RE.match(action):
+            _LOGGER.warning(
+                "Callback action does not match valid service format: %s",
+                action,
+            )
             return
 
         domain, service = action.split(".")
         service_params = callback_data.get("action_data", {})
+        if not isinstance(service_params, dict):
+            _LOGGER.warning("action_data must be a dict, got: %s", type(service_params))
+            return
 
         async def execute_callback(_) -> None:
-            await self.hass.services.async_call(
-                domain, service, service_params
-            )
+            try:
+                await self.hass.services.async_call(
+                    domain, service, service_params
+                )
+            except Exception as err:
+                _LOGGER.error(
+                    "Failed to execute callback service %s.%s: %s",
+                    domain,
+                    service,
+                    err,
+                ) from err
 
         async_call_later(self.hass, duration / 1000, execute_callback)
