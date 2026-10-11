@@ -10,6 +10,7 @@ from homeassistant.components.notify import BaseNotificationService
 from homeassistant.core import Context, EventOrigin, HomeAssistant
 from homeassistant.exceptions import ServiceValidationError
 from homeassistant.helpers.event import async_call_later
+from homeassistant.helpers.typing import ConfigType, DiscoveryInfoType
 
 from .const import (
     DEFAULT_BUTTON_LABEL,
@@ -155,3 +156,12 @@ class ToastifyNotificationService(BaseNotificationService):
                 )
 
         async_call_later(self.hass, timer_duration / 1000, execute_callback)
+
+
+async def async_get_service(
+    hass: HomeAssistant,
+    config: ConfigType,
+    discovery_info: DiscoveryInfoType | None = None,
+) -> ToastifyNotificationService:
+    """Return the toABify notification service."""
+    return ToastifyNotificationService(hass)

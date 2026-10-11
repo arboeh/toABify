@@ -9,8 +9,10 @@ from homeassistant.components import websocket_api
 from homeassistant.components.frontend import add_extra_js_url, remove_extra_js_url
 from homeassistant.components.http import StaticPathConfig
 from homeassistant.config_entries import ConfigEntry
+from homeassistant.const import CONF_NAME, Platform
 from homeassistant.core import Event, HomeAssistant, callback
 from homeassistant.exceptions import ConfigEntryNotReady
+from homeassistant.helpers import discovery
 
 from .const import (
     DOMAIN,
@@ -86,6 +88,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     hass.data.setdefault(DOMAIN, {})
     hass.data[DOMAIN][entry.entry_id] = coordinator
 
+    await discovery.async_load_platform(hass, Platform.NOTIFY, DOMAIN, {CONF_NAME: DOMAIN}, {})
+
     _LOGGER.info("toABify integration setup complete")
     return True
 
@@ -112,10 +116,8 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             except ValueError:
                 _LOGGER.debug("JS URL %s was not registered", js_url)
 
-        # Note: WebSocket commands and static paths are not explicitly
-        # unregisterable in HA without a full reload. WebSocket commands
-        # persist on the hass object, but the coordinator tracks what was
-        # registered so state is consistent within this entry's lifecycle.
+        hass.services.async_remove(Platform.NOTIFY, DOMAIN)
+
         _LOGGER.info("toABify integration unloaded")
         return True
 

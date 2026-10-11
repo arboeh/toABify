@@ -392,11 +392,12 @@ async def test_callback_dict_multiple_dots_raises_value_error(hass, enable_custo
 # ---------------------------------------------------------------------------
 
 
-def test_no_async_get_service_dead_code():
-    """Verify async_get_service was removed (config-entry-only integration)."""
-    import custom_components.toabify.notify as notify_module
+async def test_async_get_service_returns_service(hass, enable_custom_integrations):
+    """Verify async_get_service returns a ToastifyNotificationService instance."""
+    from custom_components.toabify.notify import async_get_service
 
-    assert not hasattr(notify_module, "async_get_service")
+    result = await async_get_service(hass, {})
+    assert isinstance(result, ToastifyNotificationService)
 
 
 async def test_non_string_action_no_crash(hass, enable_custom_integrations):

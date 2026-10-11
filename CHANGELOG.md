@@ -5,6 +5,20 @@ All notable changes to the toABify project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.4] - 2026-10-11
+
+### Bugfixes
+
+- **`__init__.py`**: `async_setup_entry` ruft nun `discovery.async_load_platform` auf, um die `notify`-Plattform zu registrieren. Ohne diesen Aufruf wurde `notify.toabify` nicht als Service in Home Assistant angelegt.
+- **`__init__.py`**: `async_unload_entry` entfernt nun den Service via `hass.services.async_remove("notify", DOMAIN)`.
+- **`notify.py`**: `async_get_service` wieder hinzugefügt — erforderlich für die Plattform-Registrierung durch HA's Notify-Komponente.
+- **`manifest.json`**: `codeowners` → `codeowners` (Plural, HA-konform); `config_flow: true` hinzugefügt; `notify` zu `after_dependencies` hinzugefügt.
+- **`strings.json`**: Ungültiger `configuration`-Schlüssel entfernt (verursacht hassfest-Fehler).
+
+### Geändert
+
+- Versionsnummer auf `2.0.4` erhöht.
+
 ## [2.0.3] - 2026-10-11
 
 ### Zusammenfassung
