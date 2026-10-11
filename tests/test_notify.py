@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import datetime as dt
 
+import pytest
 from pytest_homeassistant_custom_component.common import (
     async_capture_events,
     async_fire_time_changed,
@@ -271,6 +272,27 @@ async def test_callback_dict_negative_duration_no_timer(hass, enable_custom_inte
         hass,
         dt.datetime.now(dt.UTC) + dt.timedelta(seconds=10),
     )
+    await hass.async_block_till_done()
+
+    assert len(mock_calls) == 0
+
+
+async def test_callback_dict_multiple_dots_raises_value_error(hass, enable_custom_integrations):
+    """An action with more than one dot raises ValueError (split('.', 1) is not used)."""
+    mock_calls = async_mock_service(hass, "light", "turn_on")
+    service = ToastifyNotificationService(hass)
+
+    with pytest.raises(ValueError):
+        await service.async_send_message(
+            "Hello",
+            data={
+                "duration": 3000,
+                "callback": {
+                    "action": "light.turn_on.foo",
+                    "action_data": {"entity_id": "light.test"},
+                },
+            },
+        )
     await hass.async_block_till_done()
 
     assert len(mock_calls) == 0

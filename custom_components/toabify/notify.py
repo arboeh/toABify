@@ -18,7 +18,7 @@ from .const import (
 )
 
 
-def get_service(hass, config, discovery_info=None):
+async def async_get_service(hass, config, discovery_info=None):
     """Set up the toABify notification platform."""
     return ToastifyNotificationService(hass)
 
@@ -72,7 +72,7 @@ class ToastifyNotificationService(BaseNotificationService):
         if isinstance(callback_data, dict):
             action = callback_data.get("action", "")
             if "." in action:
-                domain, service = action.split(".", 1)
+                domain, service = action.split(".")
                 service_params = callback_data.get("action_data", {})
 
                 if duration > 0:
