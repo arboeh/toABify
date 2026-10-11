@@ -37,19 +37,13 @@ _NOTIFY_DATA_SCHEMA = vol.Schema(
             vol.Coerce(int), vol.Range(min=0, max=_MAX_DURATION_MS)
         ),
         vol.Optional("close", default=False): bool,
-        vol.Optional("position", default=DEFAULT_POSITION): vol.In(
-            ["left", "right", "center"]
-        ),
-        vol.Optional("gravity", default=DEFAULT_GRAVITY): vol.In(
-            ["top", "bottom", "center"]
-        ),
+        vol.Optional("position", default=DEFAULT_POSITION): vol.In(["left", "right", "center"]),
+        vol.Optional("gravity", default=DEFAULT_GRAVITY): vol.In(["top", "bottom", "center"]),
         vol.Optional("icon", default=""): str,
         vol.Optional("color", default=DEFAULT_COLOR): vol.In(
             ["success", "info", "warning", "error", "alert", "default"]
         ),
-        vol.Optional("visibility", default=DEFAULT_VISIBILITY): vol.In(
-            ["all", "dashboard"]
-        ),
+        vol.Optional("visibility", default=DEFAULT_VISIBILITY): vol.In(["all", "dashboard"]),
         vol.Optional("button_label", default=DEFAULT_BUTTON_LABEL): str,
         vol.Optional("oldestFirst", default=True): bool,
         vol.Optional("onClick"): dict,
@@ -87,16 +81,12 @@ class ToastifyNotificationService(BaseNotificationService):
         try:
             data = _NOTIFY_DATA_SCHEMA(kwargs.get("data") or {})
         except vol.Invalid as err:
-            raise ServiceValidationError(
-                f"Invalid notification data: {err}"
-            ) from err
+            raise ServiceValidationError(f"Invalid notification data: {err}") from err
 
         callback_data = data.get("callback")
         js_callback = None
 
-        if isinstance(callback_data, str) and callback_data.startswith(
-            ("/", "http")
-        ):
+        if isinstance(callback_data, str) and callback_data.startswith(("/", "http")):
             js_callback = callback_data
 
         duration = data.get("duration", DEFAULT_TIMEOUT)
@@ -137,9 +127,7 @@ class ToastifyNotificationService(BaseNotificationService):
 
         action = callback_data.get("action", "")
         if not isinstance(action, str) or "." not in action or duration <= 0:
-            _LOGGER.warning(
-                "Invalid callback action format: %s", action
-            )
+            _LOGGER.warning("Invalid callback action format: %s", action)
             return
 
         if not _VALID_SERVICE_RE.match(action):
@@ -157,9 +145,7 @@ class ToastifyNotificationService(BaseNotificationService):
 
         async def execute_callback(_) -> None:
             try:
-                await self.hass.services.async_call(
-                    domain, service, service_params
-                )
+                await self.hass.services.async_call(domain, service, service_params)
             except Exception as err:
                 _LOGGER.error(
                     "Failed to execute callback service %s.%s: %s",

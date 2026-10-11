@@ -42,15 +42,12 @@ def websocket_subscribe_toast(
     msg: dict,
 ) -> None:
     """Subscribe to toast notifications via WebSocket."""
+
     @callback
     def forward_toast(event: Event) -> None:
-        connection.send_message(
-            websocket_api.event_message(msg["id"], event.data)
-        )
+        connection.send_message(websocket_api.event_message(msg["id"], event.data))
 
-    connection.subscriptions[msg["id"]] = hass.bus.async_listen(
-        EVENT_TOAST, forward_toast
-    )
+    connection.subscriptions[msg["id"]] = hass.bus.async_listen(EVENT_TOAST, forward_toast)
     connection.send_result(msg["id"])
 
     _LOGGER.debug("WebSocket subscription established for toast notifications")
@@ -86,12 +83,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         await hass.http.async_register_static_paths([toast_path_config])
         _LOGGER.debug("Static path registered: %s", STATIC_URL_PATH)
     except Exception as err:
-        _LOGGER.error(
-            "Failed to register static path for toABify: %s", err
-        )
-        raise ConfigEntryNotReady(
-            f"Failed to register static path: {err}"
-        ) from err
+        _LOGGER.error("Failed to register static path for toABify: %s", err)
+        raise ConfigEntryNotReady(f"Failed to register static path: {err}") from err
 
     websocket_api.async_register_command(hass, websocket_subscribe_toast)
     add_extra_js_url(hass, TOAST_ENGINE_JS)

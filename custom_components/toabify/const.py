@@ -4,6 +4,7 @@ The internal protocol identifiers (EVENT_TOAST, WS_TYPE_SUBSCRIBE,
 STATIC_URL_PATH) are hardcoded in dist/toast_engine.js and must not
 change during refactoring — see D2.
 """
+
 from __future__ import annotations
 
 DOMAIN: str = "toabify"
