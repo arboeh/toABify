@@ -1,6 +1,6 @@
-# Toastify 🍞
+# toABify 🍞
 
-Intégration Toastify pour Home Assistant permettant d'afficher de superbes notifications de type "Toast" sur votre interface, en utilisant la bibliothèque [Toastify-js](https://apvarun.github.io/toastify-js/).
+Intégration toABify pour Home Assistant permettant d'afficher de superbes notifications de type "Toast" sur votre interface, en utilisant la bibliothèque [Toastify-js](https://apvarun.github.io/toastify-js/).
 
 ## ✨ Caractéristiques
 - **HACS Ready** : Installation et mises à jour simplifiées.
@@ -10,16 +10,16 @@ Intégration Toastify pour Home Assistant permettant d'afficher de superbes noti
 - **Actions Interactives** : Cliquez sur un toast pour ouvrir une URL ou **appeler un service Home Assistant** (ex: éteindre une lumière ou rediriger vers un dashboard).
 - **Utilise le service Notify** : Totalement compatible avec le système de notification natif de Home Assistant.
 
-![Aperçu de Toastify](dist/images/toastify1.jpg)
+![Aperçu de toABify](dist/images/toastify1.jpg)
 
 ## 📦 Installation
 
 ### 1. Via HACS (Recommandé)
 1. Ouvrez **HACS** dans votre instance Home Assistant.
 2. Cliquez sur les 3 points en haut à droite > **Dépôts personnalisés**.
-3. Ajoutez l'URL de ce dépôt : `https://github.com/TidjyDev/HA-Toastify`.
+3. Ajoutez l'URL de ce dépôt : `https://github.com/arboeh/toABify`.
 4. Sélectionnez la catégorie **Intégration** et cliquez sur **Ajouter**.
-5. Recherchez "Toastify" et installez-le.
+5. Recherchez "toABify" et installez-le.
 6. **Redémarrez Home Assistant.**
 
 ### 2. Configuration
@@ -28,8 +28,8 @@ Ajoutez ces lignes à votre fichier `configuration.yaml` pour activer le moteur 
 ```yaml
 # configuration.yaml : Déclaration du service de notifications toast
 notify:
-  - platform: toastify
-    name: toastify
+  - platform: toabify
+    name: toabify
 ```
 
 ## 🛠️ Paramètres du service (`data:`)
@@ -38,7 +38,7 @@ notify:
 | :--- | :--- | :--- |
 | `message` | Le texte à afficher dans la notification. | (Requis) |
 | `color` | Thème (`success`, `info`, `warning`, `error`) ou code Hex (`#FFFFFF`). | `info` |
-| `duration` | Durée en ms (`3000` = 3s). Utilisez `-1` pour un toast persistant. | `3000` |
+| `duration` | Durée en ms (`3000` = 3s). Utilisez `-1` pour un toast persistant. | `5000` |
 | `position` | Alignement horizontal : `left`, `center` ou `right`. | `right` |
 | `gravity` | Alignement vertical : `top` ou `bottom`. | `top` |
 | `close` | Affiche une croix de fermeture (`true` / `false`). | `false` |
@@ -53,12 +53,14 @@ notify:
 
 Hormis pour les paramètre `visibility`, `action_data` et `button_label` propres à Home Assistant, vous pouvez vous référer à la documentation de la librairie Toastify : https://github.com/apvarun/toastify-js pour la définition complète des paramètres.
 
+> **Note technique** : `button_label` est envoyé au frontend mais n'est pas affiché par Toastify-JS v1.12.0 (qui utilise `onClick.label` à la place). De même, `oldestFirst` est transmis mais n'a aucun effet visible car la valeur par défaut de la bibliothèque est déjà `true`.
+
 ## 💡 Exemples YAML
 
 ### Notification de succès (Vert avec gradient)
 Parfait pour confirmer qu'une automatisation s'est bien déroulée.
 ```yaml
-service: notify.toastify
+service: notify.toabify
 data:
   message: "Alarme activée avec succès"
   data:
@@ -71,7 +73,7 @@ data:
 Idéal pour les erreurs ou les alertes de sécurité qui nécessitent une attention immédiate.
 Visible même dans les menus de configuration.
 ```yaml
-service: notify.toastify
+service: notify.toabify
 data:
   message: "⚠️ Fuite d'eau détectée dans la cuisine !"
   data:
@@ -85,7 +87,7 @@ data:
 ### Notification avec Icône (Avatar)
 Pour savoir qui ou quoi a déclenché l'événement.
 ```yaml
-service: notify.toastify
+service: notify.toabify
 data:
   message: "Tidjy est arrivé à la maison"
   data:
@@ -97,7 +99,7 @@ data:
 ### Appel de service au clic (Fermer le portail)
 Cet exemple montre comment déclencher une action physique dans ta maison simplement en cliquant sur la notification.
 ```yaml
-service: notify.toastify
+service: notify.toabify
 data:
   message: "Le portail est resté ouvert ! Cliquer pour fermer."
   data:
@@ -115,7 +117,7 @@ data:
 Idéal pour rediriger instantanément l'utilisateur vers une vue spécifique de son interface Lovelace lors d'un événement.
 
 ```yaml
-service: notify.toastify
+service: notify.toabify
 data:
   message: "Mouvement détecté au jardin 🚨"
   data:
