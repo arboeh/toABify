@@ -2,9 +2,10 @@
 """Check that the version in manifest.json is consistent.
 
 Usage:
-    python scripts/check_version.py [--bump BUMP]
+    python scripts/check_version.py [--bump BUMP] [--tag TAG]
 
 --bump can be: major, minor, patch, or empty for just validation.
+--tag checks that TAG equals "v" + manifest version (used in release workflow).
 """
 
 from __future__ import annotations
@@ -52,7 +53,20 @@ def bump_version(version: str, bump: str | None) -> str:
 
 
 def main() -> int:
-    bump = sys.argv[2] if len(sys.argv) > 2 and sys.argv[1] == "--bump" else None
+    args = sys.argv[1:]
+    bump = None
+    tag = None
+
+    i = 0
+    while i < len(args):
+        if args[i] == "--bump" and i + 1 < len(args):
+            bump = args[i + 1]
+            i += 2
+        elif args[i] == "--tag" and i + 1 < len(args):
+            tag = args[i + 1]
+            i += 2
+        else:
+            i += 1
 
     manifest = load_manifest()
     manifest_version = manifest["version"]
@@ -68,6 +82,13 @@ def main() -> int:
     if changelog_version and manifest_version != changelog_version:
         print(f"ERROR: manifest ({manifest_version}) != changelog ({changelog_version})")
         return 1
+
+    if tag is not None:
+        expected_tag = f"v{manifest_version}"
+        if tag != expected_tag:
+            print(f"ERROR: tag ({tag}) != expected ({expected_tag})")
+            return 1
+        print(f"Tag matches manifest version: {tag}")
 
     return 0
 
