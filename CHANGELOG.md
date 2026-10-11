@@ -20,9 +20,12 @@ with SHA-256 verification.
 - **Directory structure**: `custom_components/toastify/` → `custom_components/toabify/`.
 - **`__init__.py`**: async_setup uses `const.py` for all protocol identifiers;
   static path fixed to `custom_components/toabify/dist`.
-- **`notify.py`**: `send_message` (sync) → `async_send_message` (async);
+- **`notify.py`**: `get_service` (sync) → `async_get_service` (async);
+  `send_message` (sync) → `async_send_message` (async);
   removed `run_callback_threadsafe`; uses `const.py` defaults.
-- **Import cleanup**: `from __future__ import annotations` added to all Python modules.
+- **`notify.py`**: `action.split(".", 1)` → `action.split(".")` — restores original
+  1:1 behavior; actions with more than one dot raise `ValueError`.
+- **import cleanup**: `from __future__ import annotations` added to all Python modules.
 
 ### Added
 
@@ -36,6 +39,10 @@ with SHA-256 verification.
 - `pyproject.toml`, `requirements_test.txt`, `requirements_dev.txt` — tooling.
 - `.pre-commit-config.yaml` — linting and formatting hooks (excludes `dist/`).
 - CI workflows for linting, testing, HACS validation, and Hassfest.
+- `SECURITY.md` — security policy with vulnerability reporting guidance.
+- `README.de.md` — German translation of the README.
+- `.github/dependabot.yml` — dependency update automation for pip and GitHub Actions.
+- `pull_request_template.md` — PR checklist template.
 
 ### Security
 
@@ -50,9 +57,10 @@ with SHA-256 verification.
 - `button_label` is sent to the frontend but the Toastify-JS engine does not display it.
 - `oldestFirst` is sent but Toastify-JS v1.12.0 has `defaults.oldestFirst = true`
   (no visible effect).
-- `innerHTML` is used for toast content (XSS risk if untrusted input is passed).
-- `action.split(".")` in `notify.py` splits on the first `.` only (service names
-  cannot contain dots).
+- `innerHTML` is used for toast content in `toast_engine.js` (XSS risk if untrusted
+  input is passed). The vendored Toastify-JS library uses `escapeMarkup` by default.
+- `action.split(".")` in `notify.py` splits on every `.` (not just the first).
+  Actions with more than one dot raise a `ValueError`.
 - Configuration is YAML-only; no `config_flow.py`.
 
 ## [1.0.0] - Prior release
