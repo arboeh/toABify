@@ -1,7 +1,24 @@
 # Third-Party Notices
 
-This document lists third-party code bundled within the **toABify** custom
-integration for Home Assistant.
+This document lists third-party code and projects that **toABify** is based on.
+
+---
+
+## HA-Toastify (TidjyDev)
+
+toABify is **based on** [HA-Toastify](https://github.com/TidjyDev/HA-Toastify) by
+TidjyDev (MIT). The original project architecture — WebSocket subscription,
+static path serving, notify platform, and event names (`toastify_event`,
+`toastify/subscribe`, `/toastify_lib`) — is preserved verbatim to maintain
+compatibility. toABify is not a fork; it is an independent evolution under the
+same MIT license.
+
+| Field | Value |
+|---|---|
+| **Name** | HA-Toastify |
+| **Author** | TidjyDev |
+| **License** | MIT |
+| **Source** | <https://github.com/TidjyDev/HA-Toastify> |
 
 ---
 

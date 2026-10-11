@@ -2,6 +2,8 @@
 
 Intégration toABify pour Home Assistant permettant d'afficher de superbes notifications de type "Toast" sur votre interface, en utilisant la bibliothèque [Toastify-js](https://apvarun.github.io/toastify-js/).
 
+> **Basé sur HA-Toastify de TidjyDev (MIT)**. toABify n'est pas un fork officiel : il partage la même architecture interne (identifiants `toastify_event`, `toastify/subscribe`, `/toastify_lib`) mais est un projet à part. **Ne pas installer toABify et HA-Toastify en parallèle** — les identifiants internes seraient en conflit.
+
 ## ✨ Caractéristiques
 - **HACS Ready** : Installation et mises à jour simplifiées.
 - **Personnalisable** : Couleur, durée, position, icônes (avatars) et bouton de fermeture.
@@ -129,4 +131,7 @@ data:
 ```
 
 ---
-*Développé avec ❤️ pour la communauté Home Assistant.*
+
+*Basé sur [HA-Toastify](https://github.com/TidjyDev/HA-Toastify) de TidjyDev (MIT).
+Utilise [Toastify-JS](https://github.com/apvarun/toastify-js) de apvarun (MIT).
+Développé avec ❤️ pour la communauté Home Assistant.*
