@@ -27,14 +27,12 @@ Eine Home Assistant-Integration, die schöne Toast-Benachrichtigungen auf Ihrer 
 6. **Starten Sie Home Assistant neu.**
 
 ### 2. Konfiguration
-Fügen Sie Folgendes zu Ihrer `configuration.yaml` hinzu, um den Benachrichtigungsdienst zu registrieren:
+Nach der Installation über HACS ist **keine manuelle Konfiguration** erforderlich.
+Die Integration wird als **Config-Entry** eingerichtzt:
 
-```yaml
-# configuration.yaml: Benachrichtigungsdienst deklarieren
-notify:
-  - platform: toabify
-    name: toabify
-```
+1. Öffnen Sie **Einstellungen** → **Geräte & Dienste** → **Integration hinzufügen**.
+2. Suchen Sie nach **toABify** und folgen Sie dem Einrichtungsassistenten.
+3. Der Benachrichtigungsdienst `notify.toabify` ist danach in Automatisierungen und Skripten verfügbar.
 
 ## 🛠️ Dienstparameter (`data:`)
 
@@ -58,7 +56,9 @@ notify:
 
 > **Technischer Hinweis**: `button_label` wird an das Frontend gesendet, aber Toastify-JS v1.12.0 zeigt es nicht an (die Engine verwendet stattdessen `onClick.label`). Ebenfalls hat `oldestFirst` keine sichtbare Wirkung, da der Standardwert der Bibliothek bereits `true` ist.
 
-## 💡 YAML-Beispiele
+## 💡 YAML-Beispiele (Service-Aufrufe)
+
+In Automatisierungen und Skripten verwenden Sie den Dienst `notify.toabify`:
 
 ### Erfolgs-Benachrichtigung (Grün mit Gradient)
 Perfekt, um erfolgreich abgeschlossene Automatisierungen zu bestätigen.

@@ -128,3 +128,11 @@ async def test_setup_entry_stores_coordinator(hass, enable_custom_integrations):
     assert STATIC_URL_PATH in coordinator.static_paths
     assert WS_TYPE_SUBSCRIBE in coordinator.ws_commands
     assert TOAST_ENGINE_JS in coordinator.js_urls
+
+
+def test_no_yaml_setup_dead_code():
+    """Verify that YAML-compatibility dead code was removed."""
+    import custom_components.toabify as init_module
+
+    assert not hasattr(init_module, "CONFIG_SCHEMA")
+    assert not hasattr(init_module, "async_setup")

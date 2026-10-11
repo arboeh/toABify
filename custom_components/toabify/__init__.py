@@ -11,7 +11,6 @@ from homeassistant.components.http import StaticPathConfig
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import Event, HomeAssistant, callback
 from homeassistant.exceptions import ConfigEntryNotReady
-from homeassistant.helpers.typing import ConfigType
 
 from .const import (
     DOMAIN,
@@ -24,11 +23,6 @@ from .const import (
 from .coordinator import ToastifyCoordinator
 
 _LOGGER = logging.getLogger(__name__)
-
-CONFIG_SCHEMA = vol.Schema(
-    {DOMAIN: vol.Schema({})},
-    extra=vol.PREVENT_EXTRA,
-)
 
 
 @websocket_api.websocket_command(
@@ -51,13 +45,7 @@ def websocket_subscribe_toast(
     connection.subscriptions[msg["id"]] = hass.bus.async_listen(EVENT_TOAST, forward_toast)
     connection.send_result(msg["id"])
 
-    _LOGGER.debug("WebSocket subscription established for toast notifications")
-
-
-async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
-    """Set up toABify - keep for YAML compatibility / migrations."""
-    _LOGGER.debug("toABify async_setup (YAML) called")
-    return True
+    _LOGGER.info("WebSocket subscription established for toast notifications")
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:

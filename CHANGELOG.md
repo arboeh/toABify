@@ -5,6 +5,27 @@ All notable changes to the toABify project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.3] - 2026-10-11
+
+### Zusammenfassung
+
+Wartungsrelease: Entfernung von totem Code, Verbesserung der Testsuite und Versionierung.
+
+### Geändert
+
+- **`__init__.py`**: Entfernt `CONFIG_SCHEMA` und `async_setup` (veraltete YAML-Kompatibilität, da Integration ausschließlich über Config-Entry-Einrichtung verwendet wird).
+- **`notify.py`**: Entfernt `async_get_service` (veralteter Service-Registrierungspfad).
+- **`notify.py`**: Vereinfacht Aktionsvalidierung — `action or ""` durch direkte `str`-Prüfung ersetzt.
+- **`tests/conftest.py`**: No-op-Abstimmung für `pytest_socket.disable_socket` auf Windows.
+- **`requirements_test.txt`**: `pytest-timeout` hinzugefügt.
+- **`pyproject.toml`**: Globaler Test-Timeout auf 600 Sekunden konfiguriert.
+- **`manifest.json`**: Versionsnummer auf `2.0.3` erhöht.
+
+### Hinzugefügt
+
+- **`tests/test_init.py`**: Test `test_no_yaml_setup_dead_code` zur Verifikation der Code-Entfernung.
+- **`tests/test_notify.py`**: Test `test_no_async_get_service_dead_code` und `test_non_string_action_no_crash` zur Abdeckung neuer Edge-Cases.
+
 ## [2.0.2] - 2026-10-11
 
 ### Summary

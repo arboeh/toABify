@@ -10,7 +10,6 @@ from homeassistant.components.notify import BaseNotificationService
 from homeassistant.core import Context, EventOrigin, HomeAssistant
 from homeassistant.exceptions import ServiceValidationError
 from homeassistant.helpers.event import async_call_later
-from homeassistant.helpers.typing import ConfigType
 
 from .const import (
     DEFAULT_BUTTON_LABEL,
@@ -56,15 +55,6 @@ _NOTIFY_DATA_SCHEMA = vol.Schema(
     },
     extra=vol.PREVENT_EXTRA,
 )
-
-
-async def async_get_service(
-    hass: HomeAssistant,
-    config: ConfigType,
-    discovery_info: tuple | None = None,
-) -> ToastifyNotificationService:
-    """Set up the toABify notification platform."""
-    return ToastifyNotificationService(hass)
 
 
 class ToastifyNotificationService(BaseNotificationService):
@@ -132,7 +122,7 @@ class ToastifyNotificationService(BaseNotificationService):
 
         action = callback_data.get("action", "")
 
-        if not isinstance(action, str) or not _VALID_SERVICE_RE.match(action or ""):
+        if not isinstance(action, str) or not _VALID_SERVICE_RE.match(action):
             _LOGGER.warning("Invalid callback action format: %s", action)
             return
 

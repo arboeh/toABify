@@ -27,14 +27,12 @@ A Home Assistant integration that displays beautiful toast-style notifications o
 6. **Restart Home Assistant.**
 
 ### 2. Configuration
-Add the following to your `configuration.yaml` to register the notification service:
+After installing via HACS, **no manual configuration** is required.
+The integration is set up as a **Config Entry**:
 
-```yaml
-# configuration.yaml: Notification service declaration
-notify:
-  - platform: toabify
-    name: toabify
-```
+1. Open **Settings** → **Devices & Services** → **Add Integration**.
+2. Search for **toABify** and follow the setup wizard.
+3. The notification service `notify.toabify` is then available in automations and scripts.
 
 ## 🛠️ Service Parameters (`data:`)
 
@@ -58,7 +56,9 @@ notify:
 
 > **Technical note**: `button_label` is sent to the frontend but Toastify-JS v1.12.0 does not display it (the engine uses `onClick.label` instead). Similarly, `oldestFirst` is transmitted but has no visible effect because the library's default is already `true`.
 
-## 💡 YAML Examples
+## 💡 YAML Examples (Service Calls)
+
+In automations and scripts, use the service `notify.toabify`:
 
 ### Success Notification (Green with Gradient)
 Perfect for confirming successful automation execution.

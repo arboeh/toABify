@@ -385,3 +385,29 @@ async def test_callback_dict_multiple_dots_raises_value_error(hass, enable_custo
     await hass.async_block_till_done()
 
     assert len(mock_calls) == 0  # No service call due to invalid action format
+
+
+# ---------------------------------------------------------------------------
+# Dead code removal verification
+# ---------------------------------------------------------------------------
+
+
+def test_no_async_get_service_dead_code():
+    """Verify async_get_service was removed (config-entry-only integration)."""
+    import custom_components.toabify.notify as notify_module
+
+    assert not hasattr(notify_module, "async_get_service")
+
+
+async def test_non_string_action_no_crash(hass, enable_custom_integrations):
+    """Direct call to _handle_callback with a non-string action does not crash."""
+    service = ToastifyNotificationService(hass)
+    mock_calls = async_mock_service(hass, "light", "turn_on")
+
+    await service._handle_callback({"action": {"not": "a string"}}, 1000)
+    await hass.async_block_till_done()
+
+    async_fire_time_changed(hass, dt.datetime.now(dt.UTC) + dt.timedelta(seconds=2))
+    await hass.async_block_till_done()
+
+    assert len(mock_calls) == 0
