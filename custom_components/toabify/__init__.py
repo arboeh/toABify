@@ -6,7 +6,7 @@ import logging
 
 import voluptuous as vol
 from homeassistant.components import websocket_api
-from homeassistant.components.frontend import add_extra_js_url
+from homeassistant.components.frontend import add_extra_js_url, remove_extra_js_url
 from homeassistant.components.http import StaticPathConfig
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import Event, HomeAssistant, callback
@@ -21,12 +21,13 @@ from .const import (
     TOAST_ENGINE_JS,
     WS_TYPE_SUBSCRIBE,
 )
+from .coordinator import ToastifyCoordinator
 
 _LOGGER = logging.getLogger(__name__)
 
 CONFIG_SCHEMA = vol.Schema(
     {DOMAIN: vol.Schema({})},
-    extra=vol.ALLOW_EXTRA,
+    extra=vol.PREVENT_EXTRA,
 )
 
 
@@ -74,6 +75,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """
     _LOGGER.debug("Setting up toABify integration")
 
+    coordinator = ToastifyCoordinator(hass)
     try:
         toast_path_config = StaticPathConfig(
             url_path=STATIC_URL_PATH,
@@ -89,11 +91,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     websocket_api.async_register_command(hass, websocket_subscribe_toast)
     add_extra_js_url(hass, TOAST_ENGINE_JS)
 
+    coordinator.async_register_static_path(STATIC_URL_PATH)
+    coordinator.async_register_ws_command(WS_TYPE_SUBSCRIBE)
+    coordinator.async_register_js_url(TOAST_ENGINE_JS)
+
     hass.data.setdefault(DOMAIN, {})
-    hass.data[DOMAIN][entry.entry_id] = {
-        "static_path": STATIC_URL_PATH,
-        "ws_type": WS_TYPE_SUBSCRIBE,
-    }
+    hass.data[DOMAIN][entry.entry_id] = coordinator
 
     _LOGGER.info("toABify integration setup complete")
     return True
@@ -112,11 +115,21 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     _LOGGER.debug("Unloading toABify integration")
 
     if DOMAIN in hass.data and entry.entry_id in hass.data[DOMAIN]:
-        del hass.data[DOMAIN][entry.entry_id]
+        coordinator: ToastifyCoordinator = hass.data[DOMAIN].pop(entry.entry_id)
 
-    # Note: WebSocket commands and static paths are not explicitly
-    # unregisterable in HA without a full reload. The entry unload
-    # primarily clears our internal data structures.
+        # Remove the extra JS URL registered via add_extra_js_url
+        for js_url in coordinator.js_urls:
+            try:
+                remove_extra_js_url(hass, js_url)
+            except ValueError:
+                _LOGGER.debug("JS URL %s was not registered", js_url)
 
-    _LOGGER.info("toABify integration unloaded")
+        # Note: WebSocket commands and static paths are not explicitly
+        # unregisterable in HA without a full reload. WebSocket commands
+        # persist on the hass object, but the coordinator tracks what was
+        # registered so state is consistent within this entry's lifecycle.
+        _LOGGER.info("toABify integration unloaded")
+        return True
+
+    _LOGGER.warning("toABify config entry %s not found in data", entry.entry_id)
     return True

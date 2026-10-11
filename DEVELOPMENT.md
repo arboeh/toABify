@@ -29,8 +29,10 @@ toABify/
 │   └── vendor_hashes.txt    # Basis-Hashwerte für vendored Dateien
 ├── tests/
 │   ├── conftest.py          # enable_custom_integrations Fixture
-│   ├── test_init.py         # Tests für async_setup (statischer Pfad, WebSocket, JS-Injektion)
-│   └── test_notify.py       # Tests für async_send_message (Standardwerte, Callbacks)
+│   ├── test_init.py         # Tests für async_setup_entry / async_unload_entry
+│   ├── test_notify.py       # Tests für async_send_message (Standardwerte, Callbacks)
+│   └── js/
+│       └── test_toast_engine.test.js  # Vitest-Tests für dist/toast_engine.js (DOM, WebSocket, Toastie-Rendering)
 ├── .editorconfig            # Editor-Einstellungen
 ├── .gitattributes           # Zeilenenden-Kontrolle (dist/ ausgeschlossen)
 ├── .pre-commit-config.yaml  # Ruff, Formatierung, Whitespace-Bereinigung, etc.
@@ -38,6 +40,8 @@ toABify/
 ├── CONTRIBUTING.md          # Verweist auf diese Datei
 ├── hacs.json                # HACS-Integrationseinstellungen (Repository-Root)
 ├── pyproject.toml           # Ruff, pytest, Python-Projektkonfiguration
+├── package.json             # Vitest (JS-Tests für toast_engine.js)
+├── vitest.config.ts         # Vitest-Konfiguration (happy-dom-Umgebung)
 ├── requirements_dev.txt     # Entwicklungsabhängigkeiten
 ├── requirements_test.txt    # Test-Abhängigkeiten (pytest, HA-Test-Fixtures)
 ├── THIRD_PARTY_NOTICES.md   # Toastify-JS v1.12.0 Lizenzierung
@@ -88,6 +92,12 @@ pip install -r requirements_dev.txt
 pre-commit install
 ```
 
+### Node.js (JS-Tests)
+
+```powershell
+npm install
+```
+
 > **Windows-Hinweis**: `pytest-homeassistant-custom-component` installiert sich unter Umständen
 > nicht sauber auf Windows aufgrund nativer HA-Abhängigkeiten. Falls dies fehlschlägt, bleiben
 > `ruff check .` und `ruff format --check .` für lokale Validierungen verfügbar.
@@ -105,8 +115,10 @@ pre-commit install
 | Linting (korrigieren) | `ruff check . --fix` |
 | Formatierung (prüfen) | `ruff format --check .` |
 | Formatierung (anwenden) | `ruff format .` |
-| Tests ausführen | `pytest` |
-| Tests ausführen (spezifische Datei) | `pytest tests/test_notify.py` |
+| Python-Tests ausführen | `pytest` |
+| Python-Tests (spezifische Datei) | `pytest tests/test_notify.py` |
+| JS-Tests ausführen | `npx vitest run` |
+| JS-Tests (spezifische Datei) | `npx vitest run tests/js/toast_engine.test.js` |
 | Version-Konsistenz | `python scripts/check_version.py` |
 | Vendor-Integrität | `python scripts/verify_vendor.py` |
 | Pre-commit (alle Hooks) | `pre-commit run --all-files` |
@@ -120,8 +132,10 @@ pre-commit install
 | Linting (korrigieren) | `ruff check . --fix` |
 | Formatierung (prüfen) | `ruff format --check .` |
 | Formatierung (anwenden) | `ruff format .` |
-| Tests ausführen | `pytest` |
-| Tests ausführen (spezifische Datei) | `pytest tests/test_notify.py` |
+| Python-Tests ausführen | `pytest` |
+| Python-Tests (spezifische Datei) | `pytest tests/test_notify.py` |
+| JS-Tests ausführen | `npx vitest run` |
+| JS-Tests (spezifische Datei) | `npx vitest run tests/js/toast_engine.test.js` |
 | Version-Konsistenz | `python scripts/check_version.py` |
 | Vendor-Integrität | `python scripts/verify_vendor.py` |
 | Pre-commit (alle Hooks) | `pre-commit run --all-files` |
@@ -178,6 +192,7 @@ pytest --cov=custom_components/toabify --cov-report=term-missing
 Die Tests werden in GitHub Actions auf Linux ausgeführt (siehe `.github/workflows/ci.yml`).
 Auf Windows kann `pytest-homeassistant-custom-component` aufgrund nativer Abhängigkeiten
 Probleme verursachen. Verwenden Sie alternativ `ruff check .` für lokale Code-Qualitätsprüfungen.
+JS-Tests (`npx vitest run`) laufen auf allen Plattformen.
 
 ---
 
@@ -185,7 +200,7 @@ Probleme verursachen. Verwenden Sie alternativ `ruff check .` für lokale Code-Q
 
 Die folgenden Hooks sind in `.pre-commit-config.yaml` konfiguriert:
 
-| Hook | Zweck | Schließt `dist/` aus? |
+| Pre-commit Hook | Zweck | Schließt `dist/` aus? |
 |---|---|---|
 | `ruff` | Linting + Import-Sortierung | Ja |
 | `ruff-format` | Code-Formatierung | Ja |
@@ -259,15 +274,18 @@ byte-gleich zum upstream Toastify-JS-Release oder zur lokalen Engine-Implementie
 
 Tests verwenden `pytest` mit `pytest-homeassistant-custom-component`, welches ein
 `hass`-Fixture bereitstellt, das eine minimale Home Assistant-Instanz startet.
+Zusätzlich gibt es JavaScript-Tests mit `vitest` für die Frontend-Engine.
 
 ### Test-Dateien
 
 - **`tests/conftest.py`**: Definiert das `enable_custom_integrations` Fixture, das den
   `DATA_CUSTOM_COMPONENTS` Cache leert, damit die Test-Integration über Tests hinweg neu geladen werden kann.
-- **`tests/test_init.py`**: Charakterisierungstests für `async_setup`:
+- **`tests/test_init.py`**: Charakterisierungstests für `async_setup_entry` / `async_unload_entry`:
   - Statischer Pfad `/toastify_lib` zeigt auf das vendored dist-Verzeichnis
   - WebSocket-Befehl `toastify/subscribe`
   - JS-Injektion (`/toastify_lib/toast_engine.js`)
+  - Koordinator-Instanziierung und State-Tracking
+  - `async_unload_entry` ruft `remove_extra_js_url` auf
 - **`tests/test_notify.py`**: Charakterisierungstests für `async_send_message`:
   - Standardwerte für alle Ereignisdatenfelder
   - Leere Nachricht-Behandlung
@@ -276,11 +294,19 @@ Tests verwenden `pytest` mit `pytest-homeassistant-custom-component`, welches ei
   - Callback als Dict (Service-Aufruf + Timer)
   - Standard-Timer-Dauer (3000 ms wenn `duration` nicht gesetzt)
   - Kein Timer wenn `duration <= 0` oder negativ
+- **`tests/js/test_toast_engine.test.js`**: Vitest-Tests für `dist/toast_engine.js`:
+  - WebSocket-Abonnement mit Typ `toastify/subscribe`
+  - CSS/JS-Ressourcen-Ladung (`toastify-css`, `toastify-js`)
+  - Keyframe-Animation (`toast-label-pulse`)
+  - Toast-Erstellung mit Standardwerten (Dauer, Position, Gravitation)
+  - Theme-Farben (`success`, `info`, `warning`, `error`, `default`)
+  - Sichtbarkeitsfilterung (`dashboard` vs. `all`)
+  - Icon-Rendering (MDI `ha-icon` vs. `img` für URLs)
+  - `onClick`-Aktionen (URL-Öffnung und HA-Service-Aufrufe)
+  - Custom-Button-Label
 
 ### Was NICHT getestet wird
 
-- Die JavaScript-Engine (`dist/toast_engine.js`) — sie ist ein IIFE ohne
-  Test-Framework. Manuelle Browser-Tests sind der Validierungspfad.
 - Integration mit einer Live-Home-Assistant-Instanz — Tests verwenden Mocks.
 
 ### Manuelle Tests im Browser
@@ -393,4 +419,4 @@ Nach dem Deployen von Änderungen im Browser verifizieren:
 | Toast wird nicht angezeigt | `visibility: dashboard`, aber URL ist kein Lovelace | Setzen Sie `visibility: all` oder korrigieren Sie Ihre Dashboard-URL |
 | Toast wird nicht angezeigt | Browser-Cache veraltet | Hard-Refresh (Strg+Shift+R) |
 | Toast wird nicht angezeigt | Engine nicht geladen | Konsolen der Entwicklungsumgebung auf `TOASTIFY` Log-Nachricht prüfen |
-| Test schlägt auf Windows fehl | `pytest_socket` blockiert Event-Loop | Tests in CI (Linux) ausführen oder `ruff` für lokale Code-Qualitätsprüfungen verwenden |
+| Test schlägt auf Windows fehl | `pytest-homeassistant-custom-component` benötigt native Abhängigkeiten (z.B. `pygame`), die auf Windows nicht installierbar sind | Tests in CI (Linux) ausführen oder `ruff check .` / `ruff format --check .` für lokale Code-Qualitätsprüfungen verwenden |
