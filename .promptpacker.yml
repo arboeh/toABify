@@ -1,0 +1,56 @@
+defaults:
+  mode: auto
+  output: project-context.md
+  force: true
+  max-depth: 0
+  exclude-ext: pyc,pyo,pyd,log,tmp,bak,swp,map,min.js,min.css,egg-info
+
+profiles:
+  ai-edge:
+    mode: auto
+    output: ai-edge-context.md
+    force: true
+    max-depth: 0
+    max-file-size: 500KB
+    exclude: >
+      .venv/,
+      env/,
+      node_modules/,
+      __pycache__/,
+      .pytest_cache/,
+      .ruff_cache/,
+      .mypy_cache/,
+      .cache/,
+      build/,
+      dist/,
+      *.egg-info/,
+      .eggs/,
+      .vscode/,
+      .kilocode/,
+      .github/.gitignore,
+      images/,
+      *.png,
+      *.jpg,
+      *.jpeg,
+      *.gif,
+      *.svg,
+      *.ico,
+      *.woff,
+      *.woff2,
+      *.ttf,
+      *.eot,
+      package-lock.json,
+      pnpm-lock.yaml,
+      yarn.lock,
+      .DS_Store,
+      Thumbs.db,
+      .env,
+      .env.*,
+      *.pem,
+      *.key,
+      *.crt,
+      secrets.yaml,
+      secrets.*.yaml,
+      *.secret,
+      RELEASE_NOTES.md
+    include-ext: py,yaml,yml,json,md,toml,txt,js,css

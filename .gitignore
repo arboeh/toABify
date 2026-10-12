@@ -18,10 +18,15 @@ RELEASE_NOTES.md
 
 # Node.js (JS test infrastructure)
 node_modules/
-package-lock.json
 yarn.lock
 .npm-debug.log*
 .nyc_output/
 
 # HACS
 hacs_*.json
+
+# Playwright
+test-results/
+playwright-report/
+blob-report/
+playwright/.cache/
