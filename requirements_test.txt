@@ -1,4 +1,4 @@
 # CI runs on Python 3.12; this phacc release pins homeassistant==2024.12.5,
 # which still installs there. Once CI moves to Python 3.14 the pin can go.
-pytest-homeassistant-custom-component==0.13.195
+pytest-homeassistant-custom-component==0.13.371
 pytest-timeout
