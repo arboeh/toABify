@@ -5,6 +5,91 @@ All notable changes to the toABify project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.4] - 2026-10-12
+
+### Summary
+
+UI accuracy release: the developer-tools form for `notify.toabify` no longer
+advertises `title` and `target`, which Home Assistant's generic legacy notify
+schema adds but this integration never reads. Existing calls stay valid; the
+visible changes are that `button_label` now renders as the button label, hex
+and null inputs that the documentation already promised are accepted, and hex
+colors reach the frontend in their expanded form.
+
+### Changed
+
+- **`notify.py`**: `ToastifyNotificationService.async_register_services` now calls
+  `super().async_register_services()` and then replaces the generic core service
+  description via `async_set_service_schema`, so the developer tools only list the
+  supported fields `message` and `data`. The core registration failure still
+  propagates; a failure of the cosmetic description override is logged only, so a
+  registered service is never broken by its UI description.
+- **`const.py`**: Added `NOTIFY_SERVICE_NAME`, `NOTIFY_SERVICE_DESCRIPTION` and
+  `NOTIFY_SERVICE_FIELDS` describing the notify service.
+- **`notify.py`**: `async_send_message` docstring documents that `title` and
+  `target` are accepted by the core schema but deliberately ignored.
+- **`notify.py`**: Inlined the private helpers `_expand_hex_color`,
+  `_drop_none_values` and `_sanitize_label` into their single call sites, and
+  replaced the shortened service/field text in `const.py` — the runtime behavior
+  is unchanged.
+- **`notify.py`**: `BaseNotificationService` is imported from
+  `homeassistant.components.notify.legacy`, the schema result is `cast` to a
+  typed dict, and `_handle_callback` is only called for dict callbacks, so
+  Pylance/pyright reports no errors in the platform.
+- **`notify.py`**: `color` now accepts hex codes (`#RGB`, `#RRGGBB`, `#RRGGBBAA`) in
+  addition to the six theme names. The frontend engine already resolved hex values,
+  but the server-side schema rejected them, so the documented hex examples failed.
+- **`notify.py`**: Optional `data:` keys that are explicitly passed as `null` are now
+  treated as "not provided" instead of failing validation — YAML and template based
+  callers may emit every optional key as null.
+- **`notify.py`**: A `#RGB` color is expanded to `#RRGGBB` before it reaches the
+  frontend, because the engine derives the label contrast from the first six
+  characters only.
+- **`notify.py`**: `button_label` is copied into `onClick.label` (server-side)
+  unless `onClick.label` is set, because the frontend engine reads the button
+  label from `onClick.label` only and otherwise falls back to its own `CLOSE`.
+- **Security**: button label is HTML-escaped and limited to 200 characters
+  because the frontend engine renders it via `innerHTML`. A non-string label
+  (`onClick: {label: 5}`) is rejected with a service validation error instead
+  of crashing, and over-long labels are truncated, never rejected.
+- **`README.md` / `README.de.md`**: Rewritten to match the verified behavior of
+  `notify.toabify`; the removed claims are documented in "Removed".
+- **`DEVELOPMENT.md`**: Documented the core-schema origin of `title`/`target`, and
+  corrected the outdated statements about `config_flow.py` and
+  `configuration.yaml` setup.
+- **`manifest.json`**: Version bumped to `2.0.4`.
+- `requirements_test.txt`: pin `pytest-homeassistant-custom-component` so the CI test job installs on Python 3.12.
+- **CI**: Vitest and Playwright jobs (`js_tests`, `e2e_tests`) in `ci.yml`;
+  `package-lock.json` is now tracked and installed via `npm ci`. Dependabot
+  covers `npm` as well.
+
+### Removed
+
+- **`custom_components/toabify/services.yaml`**: Dead code. Home Assistant's legacy
+  notify layer reads `notify/services.yaml`, not the platform's own file, so this
+  file was never loaded. Its field documentation now lives in `const.py`, the user
+  documentation in `README.md` / `README.de.md`.
+- **`README.md` / `README.de.md`**: Removed the string form of `onClick`
+  (`onClick: "/lovelace/0"`), which Home Assistant rejects with
+  `expected dict at 'onClick'`, and the `action_data` top-level parameter, which
+  is only valid inside `onClick` / `callback`. Both files now also document that
+  `gravity: center` is accepted but renders at the top, and that
+  `duration: 0` falls back to `5000` in the frontend
+  (`d.duration || 5000`) while a server-side callback still never runs for a
+  duration of `0` or less.
+
+### Added
+
+- E2E tests (Playwright, Chromium) for the frontend engine.
+- **`tests/test_notify.py`**: `test_async_register_services_overrides_description`
+  verifies that the service registration is preserved and the overridden schema
+  contains only `message` and `data`.
+- **`tests/test_readme_examples.py`**: Parses every ```yaml``` block in both
+  READMEs and validates the ones calling `notify.toabify` (``action:`` and
+  ``service:`` form) against the notify data schema, so a documented example can
+  no longer advertise a call Home Assistant rejects. Also rejects options placed
+  on the payload level instead of in the nested ``data:``.
+
 ## [2.0.3] - 2026-10-11
 
 ### Summary

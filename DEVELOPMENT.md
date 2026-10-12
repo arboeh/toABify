@@ -31,6 +31,9 @@ toABify/
 │   ├── conftest.py          # enable_custom_integrations Fixture
 │   ├── test_init.py         # Tests für async_setup_entry / async_unload_entry
 │   ├── test_notify.py       # Tests für async_send_message (Standardwerte, Callbacks)
+│   ├── e2e/                 # Playwright E2E-Tests (Chromium)
+│   │   ├── fixtures.js      # Routing ohne Server, Testseite, open_page/push_toast
+│   │   └── toast_engine.spec.js  # E2E-Tests für dist/toast_engine.js (DOM, Popups, Service-Aufrufe)
 │   └── js/
 │       └── test_toast_engine.test.js  # Vitest-Tests für dist/toast_engine.js (DOM, WebSocket, Toastie-Rendering)
 ├── .editorconfig            # Editor-Einstellungen
@@ -40,7 +43,8 @@ toABify/
 ├── CONTRIBUTING.md          # Verweist auf diese Datei
 ├── hacs.json                # HACS-Integrationseinstellungen (Repository-Root)
 ├── pyproject.toml           # Ruff, pytest, Python-Projektkonfiguration
-├── package.json             # Vitest (JS-Tests für toast_engine.js)
+├── package.json             # Vitest (JS-Tests) + Playwright (E2E-Tests) für toast_engine.js
+├── playwright.config.js     # Playwright-Konfiguration (testDir: tests/e2e, Chromium)
 ├── vitest.config.ts         # Vitest-Konfiguration (happy-dom-Umgebung)
 ├── requirements_dev.txt     # Entwicklungsabhängigkeiten
 ├── requirements_test.txt    # Test-Abhängigkeiten (pytest, HA-Test-Fixtures)
@@ -95,8 +99,12 @@ pre-commit install
 ### Node.js (JS-Tests)
 
 ```powershell
-npm install
+npm ci
 ```
+
+`package-lock.json` ist eingecheckt; `npm ci` installiert exakt die gesperrten
+Versionen (CI-tauglich). Nur wenn sich `package.json` ändert, wird das Lockfile
+mit `npm install` aktualisiert.
 
 > **Windows-Hinweis**: `pytest-homeassistant-custom-component` installiert sich unter Umständen
 > nicht sauber auf Windows aufgrund nativer HA-Abhängigkeiten. Falls dies fehlschlägt, bleiben
@@ -115,10 +123,13 @@ npm install
 | Linting (korrigieren) | `ruff check . --fix` |
 | Formatierung (prüfen) | `ruff format --check .` |
 | Formatierung (anwenden) | `ruff format .` |
+| Node-Abhängigkeiten installieren | `npm ci` (nutzt `package-lock.json`) |
 | Python-Tests ausführen | `pytest` |
 | Python-Tests (spezifische Datei) | `pytest tests/test_notify.py` |
 | JS-Tests ausführen | `npx vitest run` |
 | JS-Tests (spezifische Datei) | `npx vitest run tests/js/toast_engine.test.js` |
+| E2E-Tests ausführen | `npm run test_e2e` |
+| E2E-Tests (einmalige Einrichtung) | `npx playwright install chromium` |
 | Version-Konsistenz | `python scripts/check_version.py` |
 | Vendor-Integrität | `python scripts/verify_vendor.py` |
 | Pre-commit (alle Hooks) | `pre-commit run --all-files` |
@@ -132,10 +143,13 @@ npm install
 | Linting (korrigieren) | `ruff check . --fix` |
 | Formatierung (prüfen) | `ruff format --check .` |
 | Formatierung (anwenden) | `ruff format .` |
+| Node-Abhängigkeiten installieren | `npm ci` (nutzt `package-lock.json`) |
 | Python-Tests ausführen | `pytest` |
 | Python-Tests (spezifische Datei) | `pytest tests/test_notify.py` |
 | JS-Tests ausführen | `npx vitest run` |
 | JS-Tests (spezifische Datei) | `npx vitest run tests/js/toast_engine.test.js` |
+| E2E-Tests ausführen | `npm run test_e2e` |
+| E2E-Tests (einmalige Einrichtung) | `npx playwright install chromium` |
 | Version-Konsistenz | `python scripts/check_version.py` |
 | Vendor-Integrität | `python scripts/verify_vendor.py` |
 | Pre-commit (alle Hooks) | `pre-commit run --all-files` |
@@ -153,6 +167,23 @@ Stellen Sie sicher, dass die virtuelle Umgebung eingerichtet und aktiviert ist (
 source .venv/Scripts/activate
 pip install -r requirements_test.txt
 ```
+
+> **Windows:** `pytest` läuft unter Windows **nicht** — `homeassistant.runner`
+> importiert `fcntl`, das nur unter Python auf Linux existiert; der
+> Plugin-Import bricht ab. Lokale Ausführung daher in **WSL2 (Ubuntu)** mit
+> Python 3.12 und dem gepinnten `pytest-homeassistant-custom-component` aus
+> `requirements_test.txt`:
+>
+> ```bash
+> python3.12 -m venv --without-pip ~/venv-t312
+> curl -sS https://bootstrap.pypa.io/get-pip.py | ~/venv-t312/bin/python
+> . ~/venv-t312/bin/activate && pip install --index-url https://pypi.org/simple -r requirements_test.txt
+> pytest -v
+> ```
+>
+> `python3.12-venv`/`ensurepip` fehlt in manchen WSL-Images (daher
+> `--without-pip` + `get-pip.py`, kein Root nötig); der Standard-Index mancher
+> Distributionen ist veraltet, deshalb der explizite pypi.org-Index.
 
 ### Tests ausführen
 
@@ -274,7 +305,9 @@ byte-gleich zum upstream Toastify-JS-Release oder zur lokalen Engine-Implementie
 
 Tests verwenden `pytest` mit `pytest-homeassistant-custom-component`, welches ein
 `hass`-Fixture bereitstellt, das eine minimale Home Assistant-Instanz startet.
-Zusätzlich gibt es JavaScript-Tests mit `vitest` für die Frontend-Engine.
+Zusätzlich gibt es JavaScript-Tests mit `vitest` für die Frontend-Engine sowie
+E2E-Tests mit `playwright` (Chromium), die die Engine ohne Home Assistant gegen
+echtes DOM und echte Popups fahren.
 
 ### Test-Dateien
 
@@ -289,11 +322,22 @@ Zusätzlich gibt es JavaScript-Tests mit `vitest` für die Frontend-Engine.
 - **`tests/test_notify.py`**: Charakterisierungstests für `async_send_message`:
   - Standardwerte für alle Ereignisdatenfelder
   - Leere Nachricht-Behandlung
+  - Farbvalidierung (Theme-Namen, Hex inkl. `#RGB`-Expansion, ungültige Werte)
+  - Explizite `null`-Werte fallen auf die Schema-Defaults zurück
   - Icon/Avatar Fallback-Logik
+  - `button_label`-Übernahme in `onClick.label` (auch: eigener `onClick.label` gewinnt)
   - Callback als String-URL (mit/ohne `/` oder `http` Präfix)
   - Callback als Dict (Service-Aufruf + Timer)
   - Standard-Timer-Dauer (3000 ms wenn `duration` nicht gesetzt)
   - Kein Timer wenn `duration <= 0` oder negativ
+- **`tests/test_readme_examples.py`**: Schutztests für die Dokumentation:
+  - Extrahiert alle ```yaml```-Blöcke aus `README.md` und `README.de.md`
+  - Validiert jeden Block mit `action: notify.toabify` gegen `_NOTIFY_DATA_SCHEMA`
+    (nach dem Inline-Aussortieren von `null`-Werten), damit die Doku keinen
+    Aufruf beschreibt, den Home Assistant ablehnt (Regression: die entfernte
+    String-Form von `onClick`)
+  - Prüft, dass beide READMEs mindestens ein `notify.toabify`-Beispiel enthalten
+  - Synchron, ohne `hass`-Fixture
 - **`tests/js/test_toast_engine.test.js`**: Vitest-Tests für `dist/toast_engine.js`:
   - WebSocket-Abonnement mit Typ `toastify/subscribe`
   - CSS/JS-Ressourcen-Ladung (`toastify-css`, `toastify-js`)
@@ -304,6 +348,27 @@ Zusätzlich gibt es JavaScript-Tests mit `vitest` für die Frontend-Engine.
   - Icon-Rendering (MDI `ha-icon` vs. `img` für URLs)
   - `onClick`-Aktionen (URL-Öffnung und HA-Service-Aufrufe)
   - Custom-Button-Label
+- **`tests/e2e/fixtures.js`**: Playwright-Fixture ohne Server:
+  - Routet `http://toabify.test/**` auf **Context**-Ebene (bedient auch Popups)
+  - Liefert `/toastify_lib/*` direkt aus `dist/`, jeden anderen Pfad als Testseite
+  - Testseite mockt das `hass`-Objekt (`subscribeMessage` liefert
+    `window.__toast_push`, `callService` zeichnet Aufrufe in
+    `window.__service_calls` auf)
+  - Helfer `open_page(page, path)` (wartet auf das Engine-Abonnement, Poll-Takt 1 s)
+    und `push_toast(page, overrides)` (Server-Defaults plus Overrides)
+- **`tests/e2e/toast_engine.spec.js`**: E2E-Tests der **echten Engine** mit dem
+  **echten Toastify** im Chromium, ohne Home Assistant. Zweck: Verhalten prüfen,
+  das Vitest in `happy-dom` nicht abbildet — berechnete Styles, Klasse
+  `toastify-top`/`toastify-bottom`, Popups per `window.open`, Service-Aufrufe
+  über den `hass`-Mock, Sichtbarkeit pro `window.location.pathname`. Geprüft
+  werden nur DOM, Styles, Popups und Mock-Aufrufe, keine Screenshots:
+  - Farb-/Kontrast-Rendering (`success`-Theme, `#ffffff`/`#000000`-Kontrasttext)
+  - Button-Logik: kein Button ohne `onClick`, nur X mit `close: true`
+  - `onClick: {}` → `CLOSE`, eigenes Label, Pfad-Aktion öffnet neuen Tab,
+    `domain.service`-Aktion ruft `hass.callService` auf, unbekannter Key
+    (`URL`) tut nichts
+  - Label wird als Text gerendert (`a &amp; b &lt;b&gt;x&lt;/b&gt;` ergibt
+    wörtlich `a & b <b>x</b>` — klärt die `&Ajax;`-Anomalie)
 
 ### Was NICHT getestet wird
 
@@ -330,13 +395,10 @@ Nach dem Deployen von Änderungen im Browser verifizieren:
    ```
    config/custom_components/toabify/
    ```
-2. Fügen Sie zu `configuration.yaml` hinzu:
-   ```yaml
-   notify:
-     - platform: toabify
-       name: toabify
-   ```
-3. Home Assistant neu starten.
+2. Home Assistant neu starten.
+3. Integration über **Einstellungen → Geräte & Dienste → Integration hinzufügen**,
+   Suche nach **toABify**, abschließen. Der Config-Flow legt einen Config-Entry
+   ohne weitere Optionen an; `configuration.yaml` wird nicht benötigt.
 4. Service aufrufen:
    ```yaml
    service: notify.toabify
@@ -374,9 +436,20 @@ Nach dem Deployen von Änderungen im Browser verifizieren:
 
 | Workflow | Datei | Trigger | Zweck |
 |---|---|---|---|
-| CI | `.github/workflows/ci.yml` | `push`, `pull_request` | Linting + Tests + Hassfest |
+| CI | `.github/workflows/ci.yml` | `push`, `pull_request` | Linting + Tests (Python, JS, E2E) + Hassfest + Vendor-Check |
 | HACS | `.github/workflows/hacs.yml` | `push` | Validierung der HACS-Repositorystruktur |
 | Release | `.github/workflows/release.yml` | `push: tags` | GitHub-Release aus Tag erstellen |
+
+Jobs in `ci.yml` (unabhängig voneinander):
+
+| Job | Lauf | Zweck |
+|---|---|---|
+| `lint` | `ruff check .`, `ruff format --check .` | Code-Qualität |
+| `test` | `pytest --cov=custom_components/toabify` | Python-Tests |
+| `hassfest` | `home-assistant/actions/hassfest@master` | HA-Repositoryvalidierung |
+| `vendor-check` | `python scripts/verify_vendor.py` | `dist/`-Integrität |
+| `js_tests` | `npm ci`, `npm test` | Vitest auf `dist/toast_engine.js` |
+| `e2e_tests` | `npm ci`, `npx playwright install --with-deps chromium`, `npm run test_e2e` | Playwright-E2E (Chromium); Traces als Artefakt bei Fehlschlag |
 
 ---
 
@@ -386,18 +459,33 @@ Nach dem Deployen von Änderungen im Browser verifizieren:
    (für die Anzeige), aber der serverseitige Callback-Timer standardisiert auf `3000` ms.
    Wenn `duration` explizit gesetzt ist, verwenden beide dens gleiche Wert.
 
-2. **`button_label` wird gesendet, aber nicht angezeigt**: Der `button_label`-Wert ist im
-   Ereignis-Payload enthalten, aber die Toastify-JS-Engine (v1.12.0) verwendet ihn nicht
-   zur Schaltflächen-Rendierung. Die Engine verwendet stattdessen `onClick.label`.
+2. **`button_label` wird serverseitig nach `onClick.label` übernommen**: Die
+   Toastify-JS-Engine (v1.12.0) liest die Schaltflächen-Beschriftung ausschließlich aus
+   `onClick.label`; `button_label` kommt in `dist/toast_engine.js` nicht vor. Damit die
+   Engine den gewählten Text zeigt, kopiert `_apply_button_label` (in `notify.py`) den
+   Wert von `button_label` in `onClick.label`, sofern dort kein eigener Wert gesetzt ist.
+   Reihenfolge: `onClick.label`, dann `button_label`, dann das Engine-eigene Fallback
+   `CLOSE`. Ein `button_label` ohne `onClick` erzeugt keine Schaltfläche, denn die Engine
+   rendert einen Button nur unter `if (d.onClick)`.
 
 3. **`oldestFirst` hat keine sichtbare Wirkung**: Toastify-JS v1.12.0 setzt
    `defaults.oldestFirst = true`, sodass das Flag ein No-Op ist.
 
-4. **`innerHTML` für Inhalte**: Toast-Inhalte werden über `innerHTML` in
-   `toast_engine.js` gerendert (spezifisch `btn.innerHTML` mit `onClick.label`),
-   was ein XSS-Risiko darstellt, wenn unvertrauene Benutzereingaben übergeben werden.
-   Die vendored Toastify-JS-Bibliothek verwendet standardmäßig `escapeMarkup`;
-   nur die lokale Engine umgeht dies.
+4. **`innerHTML` nur für die Button-Beschriftung**: In `toast_engine.js` wird
+   ausschließlich die Schaltflächen-Beschriftung über `btn.innerHTML` mit
+   `onClick.label` eingesetzt; die `message` selbst escaped Toastify-JS
+   (`escapeMarkup`). Da `dist/` nicht geändert werden darf (Vendor-Hashes in
+   `scripts/vendor_hashes.txt`), entschärft `notify.py` serverseitig:
+   `_apply_button_label` (in `notify.py`) escaped `& < > " '`, kappt die Länge bei
+   200 Zeichen (Kappung, keine Ablehnung) und weist Nicht-Strings (nur über
+   `onClick.label` erreichbar, da `button_label` schema-validiert ist) mit einem
+   `vol.Invalid` zurück, das als `ServiceValidationError` an den Aufrufer geht.
+   Der Choke-Point bleibt `_apply_button_label`: sowohl `button_label` als auch
+   ein explizites `onClick.label` gehen durch dieselbe Behandlung. Die Engine
+   selbst ist unverändert.
+   Der Choke-Point bleibt `_apply_button_label`: sowohl `button_label` als auch
+   ein explizites `onClick.label` gehen durch dieselbe Behandlung. Die Engine
+   selbst ist unverändert.
 
 5. **`action.split(".")`**: In `notify.py` wird die Callback-Aktion bei
    jedem `.` getrennt (`split(".")`). Aktionen mit mehr als einem Punkt
@@ -405,8 +493,64 @@ Nach dem Deployen von Änderungen im Browser verifizieren:
    keine Punkte enthalten, daher ist dies das ursprüngliche 1:1-Verhalten —
    nicht geändert.
 
-6. **YAML-konfiguration**: Es gibt keine `config_flow.py`; der Dienst wird
-   ausschließlich über `configuration.yaml` konfiguriert.
+6. **Einrichtung**: Die Integration verwendet einen Config-Flow (`config_flow.py`).
+   Die Einrichtung erfolgt über **Einstellungen → Geräte & Dienste → Integration
+   hinzufügen**; `configuration.yaml` wird nicht benötigt.
+
+7. **`title` und `target` in der Service-Beschreibung**: `notify.toabify` ist ein
+   Legacy-Notify-Service. Home Assistant registriert ihn mit dem generischen
+   `NOTIFY_SERVICE_SCHEMA` (`message`, `title`, `target`, `data`) und beschreibt
+   die Felder in der UI aus `homeassistant/components/notify/services.yaml`.
+   Beide Felder werden vom Core akzeptiert und von `async_send_message` stillschweigend
+   ignoriert. Damit die Entwicklerwerkzeuge keine nicht unterstützten Felder anzeigen,
+   überschreibt `ToastifyNotificationService.async_register_services` (erst `super()`,
+   dann `async_set_service_schema`) die Core-Beschreibung mit den tatsächlich
+   unterstützten Feldern `message` und `data` — definiert in `const.py`
+   (`NOTIFY_SERVICE_NAME`, `NOTIFY_SERVICE_DESCRIPTION`, `NOTIFY_SERVICE_FIELDS`).
+   Die Laufzeit-Validierung des Core bleibt unverändert: ein Aufruf mit `title`
+   oder `target` schlägt nicht fehl. Die frühere `custom_components/toabify/services.yaml`
+   war toter Code (der Core liest `notify/services.yaml`, nicht die der Plattform)
+   und wurde entfernt.
+
+   **Fehlerbehandlung**: Schlägt `super().async_register_services()` fehl, wird der
+   Fehler weitergegeben, denn dann ist gar kein Service registriert. Das Überschreiben
+   der Beschreibung ist dagegen rein kosmetisch — der Service funktioniert bereits.
+   Ein Fehler dort wird deshalb nur geloggt (`_LOGGER.exception`) und nicht
+   weitergereicht, damit ein funktionierender Service nie an seiner UI-Beschreibung
+   scheitert.
+
+8. **`onClick` wird nur als Objekt akzeptiert**: Ein String (z. B.
+   `onClick: "/lovelace/0"`) wird vom Schema mit `expected dict at 'onClick'`
+   abgelehnt. Die Kurzform gilt nur für `callback`. Die String-Kurzform für `onClick`
+   ist bewusst nicht ergänzt (Funktionsentscheidung, offen).
+
+9. **Unbekannte Schlüssel in `onClick` werden ignoriert**: Das Schema deklariert
+   `onClick` als beliebiges `dict`. Die Engine liest ausschließlich
+   `action`, `action_data`, `label` und `feedback`; ein falsch geschriebener Schlüssel
+   (z. B. `URL` statt `action`) wird ohne Fehler verworfen. `executeAction` liefert dann
+   `false`, und der Toast schließt sich nach der Dauer — von außen sieht es so aus, als
+   würde "nichts passieren". Eine Warnung (`_LOGGER.warning`) oder eine Schema-Validierung
+   wäre möglich, ist aber bewusst nicht umgesetzt (offen).
+
+10. **`callback` hat zwei Formen**: Als String (`/...` oder `http...`) wird der Wert im
+    Browser beim Verschwinden des Toasts geöffnet (`window.open`, Popup-Blocker möglich).
+    Als Objekt (`action`, `action_data`) ist es ein **serverseitiger Dienstaufruf** nach
+    `duration` ms (ohne `duration` nach `3000` ms). Bei `duration <= 0` wird er nie
+    ausgeführt. Beide Formen sind live verifiziert.
+
+11. **`gravity: center` rendert oben**: Das Schema akzeptiert `top`, `bottom` und `center`.
+    Die Engine übergibt `gravity` direkt an Toastify-JS (`d.gravity || "top"`), und
+    `center` wird von Toastify-JS als `top` behandelt. Der Wert ist daher in den
+    READMEs als „akzeptiert, rendert aber oben" dokumentiert, ohne als Empfehlung
+    zu gelten.
+
+12. **Hex-Farben**: `color` akzeptiert die sechs Theme-Namen sowie Hex-Farben
+    (`#RGB`, `#RRGGBB`, `#RRGGBBAA`). Ein `#RGB`-Wert wird in `_validate_color`
+    (in `notify.py`) zu `#RRGGBB` erweitert, weil die Engine die
+    Label-Kontrastfarbe nur aus den ersten sechs Zeichen berechnet
+    (`getContrastColor`). Die Engine selbst unterstützt Hex bereits
+    (`TOAST_THEMES[colorInput] || d.color`), nur das Server-Schema hat es vorher
+    abgelehnt.
 
 ---
 

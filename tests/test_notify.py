@@ -11,14 +11,19 @@ are hardcoded in dist/toast_engine.js and do not change during the refactor.
 from __future__ import annotations
 
 import datetime as dt
+from unittest.mock import AsyncMock, patch
 
+import pytest
+from homeassistant.components.notify import BaseNotificationService
+from homeassistant.exceptions import ServiceValidationError
 from pytest_homeassistant_custom_component.common import (
     async_capture_events,
     async_fire_time_changed,
     async_mock_service,
 )
 
-from custom_components.toabify.notify import ToastifyNotificationService
+from custom_components.toabify.const import DOMAIN
+from custom_components.toabify.notify import ToastifyNotificationService, _apply_button_label
 
 # These values match the current hardcoded defaults and will be preserved
 # in const.py during the refactoring (Task 5).
@@ -66,6 +71,120 @@ async def test_send_message_empty_message(hass, enable_custom_integrations):
     assert events[0].data["message"] == ""
 
 
+# ---------------------------------------------------------------------------
+# Color validation (theme names and hex codes)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "color",
+    ["success", "info", "warning", "error", "alert", "default"],
+)
+async def test_color_theme_names_are_accepted(hass, enable_custom_integrations, color):
+    """All theme names configured in TOAST_THEMES pass validation."""
+    service = ToastifyNotificationService(hass)
+    events = async_capture_events(hass, EVENT_TOAST)
+
+    await service.async_send_message("Hello", data={"color": color})
+    await hass.async_block_till_done()
+
+    assert events[0].data["color"] == color
+
+
+@pytest.mark.parametrize(
+    ("color", "expected"),
+    [
+        ("#fff", "#ffffff"),
+        ("#ff5f6d", "#ff5f6d"),
+        ("#FF5F6D", "#FF5F6D"),
+        ("#ff5f6d80", "#ff5f6d80"),
+        ("#ff5f6dff", "#ff5f6dff"),
+    ],
+)
+async def test_color_hex_codes_are_accepted(hass, enable_custom_integrations, color, expected):
+    """Hex colors are rendered by the engine, so they must pass validation.
+
+    A #RGB value is expanded to #RRGGBB because the engine derives the label
+    contrast from the first six characters only.
+    """
+    service = ToastifyNotificationService(hass)
+    events = async_capture_events(hass, EVENT_TOAST)
+
+    await service.async_send_message("Hello", data={"color": color})
+    await hass.async_block_till_done()
+
+    assert events[0].data["color"] == expected
+
+
+@pytest.mark.parametrize("color", ["purple", "#ff5f6", "#gggggg", "", 5])
+async def test_color_invalid_rejected(hass, enable_custom_integrations, color):
+    """Values that are neither a theme name nor a hex color are rejected."""
+    service = ToastifyNotificationService(hass)
+
+    with pytest.raises(ServiceValidationError):
+        await service.async_send_message("Hello", data={"color": color})
+
+
+# ---------------------------------------------------------------------------
+# Explicit nulls are treated as "not provided"
+# ---------------------------------------------------------------------------
+
+
+async def test_explicit_nulls_fall_back_to_defaults(hass, enable_custom_integrations):
+    """YAML/template callers may pass every optional key as null."""
+    service = ToastifyNotificationService(hass)
+    events = async_capture_events(hass, EVENT_TOAST)
+
+    await service.async_send_message(
+        "Hello",
+        data={
+            "duration": None,
+            "close": None,
+            "position": None,
+            "gravity": None,
+            "color": None,
+            "visibility": None,
+            "icon": None,
+            "avatar": None,
+            "button_label": None,
+            "oldestFirst": None,
+            "onClick": None,
+            "callback": None,
+        },
+    )
+    await hass.async_block_till_done()
+
+    assert len(events) == 1
+    data = events[0].data
+    assert data["duration"] == 5000
+    assert data["close"] is False
+    assert data["position"] == DEFAULT_POSITION
+    assert data["gravity"] == DEFAULT_GRAVITY
+    assert data["color"] == DEFAULT_COLOR
+    assert data["visibility"] == DEFAULT_VISIBILITY
+    assert data["button_label"] == DEFAULT_BUTTON_LABEL
+    assert data["oldestFirst"] is True
+    assert data["icon"] == ""
+    assert data["onClick"] is None
+    assert data["callback"] is None
+
+
+async def test_explicit_null_does_not_override_provided_value(hass, enable_custom_integrations):
+    """A null next to a real value must not wipe the real value."""
+    service = ToastifyNotificationService(hass)
+    events = async_capture_events(hass, EVENT_TOAST)
+
+    await service.async_send_message(
+        "Hello",
+        data={"color": "#ff5f6d", "duration": None, "visibility": None},
+    )
+    await hass.async_block_till_done()
+
+    assert events[0].data["color"] == "#ff5f6d"
+    assert events[0].data["duration"] == 5000
+    assert events[0].data["visibility"] == DEFAULT_VISIBILITY
+
+
 # Icon / avatar fallback
 
 
@@ -99,6 +218,121 @@ async def test_icon_overrides_avatar(hass, enable_custom_integrations):
     await hass.async_block_till_done()
 
     assert events[0].data["icon"] == "/local/icon.png"
+
+
+# ---------------------------------------------------------------------------
+# button_label is copied into the onClick object
+# ---------------------------------------------------------------------------
+
+
+async def test_button_label_applied_to_on_click(hass, enable_custom_integrations):
+    """The engine reads the button label from onClick.label only."""
+    service = ToastifyNotificationService(hass)
+    events = async_capture_events(hass, EVENT_TOAST)
+
+    await service.async_send_message(
+        "Hello",
+        data={"button_label": "Open", "onClick": {"action": "/dashboard-home/default_view"}},
+    )
+    await hass.async_block_till_done()
+
+    assert events[0].data["onClick"] == {
+        "action": "/dashboard-home/default_view",
+        "label": "Open",
+    }
+
+
+async def test_explicit_on_click_label_wins(hass, enable_custom_integrations):
+    """An explicit onClick.label is not overwritten by button_label."""
+    service = ToastifyNotificationService(hass)
+    events = async_capture_events(hass, EVENT_TOAST)
+
+    await service.async_send_message(
+        "Hello",
+        data={
+            "button_label": "Open",
+            "onClick": {"action": "/dashboard-home/default_view", "label": "Dashboard"},
+        },
+    )
+    await hass.async_block_till_done()
+
+    assert events[0].data["onClick"] == {
+        "action": "/dashboard-home/default_view",
+        "label": "Dashboard",
+    }
+
+
+async def test_button_label_without_on_click_stays_none(hass, enable_custom_integrations):
+    """Without onClick the engine renders no button, so nothing is copied."""
+    service = ToastifyNotificationService(hass)
+    events = async_capture_events(hass, EVENT_TOAST)
+
+    await service.async_send_message("Hello", data={"button_label": "Open"})
+    await hass.async_block_till_done()
+
+    assert events[0].data["onClick"] is None
+    assert events[0].data["button_label"] == "Open"
+
+
+@pytest.mark.parametrize(
+    ("label", "expected"),
+    [
+        ("</span><img src=x onerror=alert(1)>", "&lt;/span&gt;&lt;img src=x onerror=alert(1)&gt;"),
+        ("<script>alert(1)</script>", "&lt;script&gt;alert(1)&lt;/script&gt;"),
+        ("<b>x</b>", "&lt;b&gt;x&lt;/b&gt;"),
+        ("ON & OFF", "ON &amp; OFF"),
+        ('Say "hi"', "Say &quot;hi&quot;"),
+        ("a" * 500, "a" * 200),
+        ("", "CLOSE"),
+    ],
+)
+async def test_button_label_is_escaped(hass, enable_custom_integrations, label, expected):
+    """The engine inserts the label as HTML, so the server must neutralize it."""
+    service = ToastifyNotificationService(hass)
+    events = async_capture_events(hass, EVENT_TOAST)
+
+    await service.async_send_message(
+        "Hello",
+        data={"button_label": label, "onClick": {"action": "/dashboard-home/default_view"}},
+    )
+    await hass.async_block_till_done()
+
+    assert events[0].data["onClick"]["label"] == expected
+
+
+async def test_explicit_on_click_label_is_escaped(hass, enable_custom_integrations):
+    """An explicit label goes through the same choke point."""
+    service = ToastifyNotificationService(hass)
+    events = async_capture_events(hass, EVENT_TOAST)
+
+    await service.async_send_message(
+        "Hello",
+        data={"onClick": {"action": "/dash", "label": "<b>Open</b>"}},
+    )
+    await hass.async_block_till_done()
+
+    assert events[0].data["onClick"]["label"] == "&lt;b&gt;Open&lt;/b&gt;"
+
+
+async def test_non_string_on_click_label_raises(hass, enable_custom_integrations):
+    """A non-string label is rejected as invalid data, not coerced."""
+    service = ToastifyNotificationService(hass)
+
+    with pytest.raises(ServiceValidationError, match="must be a string"):
+        await service.async_send_message(
+            "Hello",
+            data={"onClick": {"action": "/dash", "label": 5}},
+        )
+
+
+def test_apply_button_label_does_not_mutate_input():
+    """The caller's onClick dict is copied, never modified in place."""
+    on_click = {"action": "/dash", "label": "<b>x</b>"}
+
+    labeled = _apply_button_label(on_click, "Open")
+
+    assert on_click == {"action": "/dash", "label": "<b>x</b>"}
+    assert labeled["label"] == "&lt;b&gt;x&lt;/b&gt;"
 
 
 # ---------------------------------------------------------------------------
@@ -398,6 +632,59 @@ async def test_async_get_service_returns_service(hass, enable_custom_integration
 
     result = await async_get_service(hass, {})
     assert isinstance(result, ToastifyNotificationService)
+
+
+# ---------------------------------------------------------------------------
+# Service description override (replaces the generic core notify schema)
+# ---------------------------------------------------------------------------
+
+
+async def test_async_register_services_overrides_description(hass, enable_custom_integrations):
+    """async_register_services keeps the core registration and overrides the schema."""
+    super_register = AsyncMock()
+
+    with (
+        patch.object(BaseNotificationService, "async_register_services", super_register),
+        patch("custom_components.toabify.notify.async_set_service_schema") as mock_set_schema,
+    ):
+        service = ToastifyNotificationService(hass)
+        await service.async_register_services()
+
+    super_register.assert_awaited_once()
+    assert mock_set_schema.call_count == 1
+
+    call_args = mock_set_schema.call_args.args
+    assert call_args[0] is hass
+    assert call_args[1] == "notify"
+    assert call_args[2] == DOMAIN
+
+    schema = call_args[3]
+    assert set(schema["fields"]) == {"message", "data"}
+    assert "target" not in schema["fields"]
+    assert "title" not in schema["fields"]
+    assert schema["fields"]["message"]["required"] is True
+
+
+async def test_async_register_services_schema_error_is_logged_only(
+    hass, enable_custom_integrations
+):
+    """A failing description override is logged and does not break the service."""
+    super_register = AsyncMock()
+
+    with (
+        patch.object(BaseNotificationService, "async_register_services", super_register),
+        patch(
+            "custom_components.toabify.notify.async_set_service_schema",
+            side_effect=RuntimeError("boom"),
+        ),
+        patch("custom_components.toabify.notify._LOGGER") as mock_logger,
+    ):
+        service = ToastifyNotificationService(hass)
+        await service.async_register_services()
+
+    # The core registration still happened and the error did not propagate.
+    super_register.assert_awaited_once()
+    mock_logger.exception.assert_called_once()
 
 
 async def test_non_string_action_no_crash(hass, enable_custom_integrations):

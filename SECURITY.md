@@ -19,9 +19,13 @@ Please report security vulnerabilities responsibly:
 
 ## Known Security Considerations
 
-- **XSS risk**: Toast content is rendered via `innerHTML` in `toast_engine.js`.
-  Only pass trusted text in the `message` parameter. See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)
-  and the "Known Deviations" section in [DEVELOPMENT.md](DEVELOPMENT.md).
+- **XSS risk**: The toast `message` is rendered as plain text (Toastify's own
+  `escapeMarkup`). Only the button label (`onClick.label`, or `button_label`
+  when no explicit label is set) is inserted via `innerHTML` in
+  `toast_engine.js`; the integration escapes it server-side, limits it to 200
+  characters, and rejects non-string labels, so markup in a label is displayed
+  as text and never executes. `dist/` is vendored and unchanged. See the
+  "Known Deviations" section in [DEVELOPMENT.md](DEVELOPMENT.md).
 
 - **Callback service calls**: The `callback` action as a dict executes a Home
   Assistant service after the toast duration. Ensure only trusted users can
