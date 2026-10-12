@@ -2,8 +2,6 @@
 
 **[English](README.md) | Deutsch**
 
-Eine Home Assistant-Integration, die schöne Toast-Benachrichtigungen auf Ihrer Oberfläche anzeigt, basierend auf [Toastify-JS](https://apvarun.github.io/toastify-js/).
-
 [![Home Assistant](https://img.shields.io/badge/Home%20Assistant-Integration-41BDF5?logo=home-assistant)](https://www.home-assistant.io/)
 [![Release](https://img.shields.io/github/v/release/arboeh/toABify?display_name=tag&label=Release)](https://github.com/arboeh/toABify/releases/latest)
 [![CI](https://github.com/arboeh/toABify/actions/workflows/ci.yml/badge.svg)](https://github.com/arboeh/toABify/actions)
@@ -11,7 +9,9 @@ Eine Home Assistant-Integration, die schöne Toast-Benachrichtigungen auf Ihrer 
 [![maintained](https://img.shields.io/maintained/yes/2026)](https://github.com/arboeh/toABify/graphs/commit-activity)
 [![Lizenz: MIT](https://img.shields.io/badge/Lizenz-MIT-yellow.svg)](https://github.com/arboeh/toABify/blob/main/LICENSE)
 
-> **Basierend auf HA-Toastify von TidjyDev (MIT)**. toABify ist kein offizieller Fork: Es teilt die gleiche interne Architektur (Identifikatoren `toastify_event`, `toastify/subscribe`, `/toastify_lib`), ist aber ein eigenständiges Projekt. **Installieren Sie toABify nicht parallel zu HA-Toastify** - die internen Identifikatoren würden Konflikte verursachen.
+**Eine Home Assistant-Integration, die schöne Toast-Benachrichtigungen auf Ihrer Oberfläche anzeigt, basierend auf [Toastify-JS](https://apvarun.github.io/toastify-js/).**
+
+> toABify ist kein offizieller Fork: Es teilt die gleiche interne Architektur (Identifikatoren `toastify_event`, `toastify/subscribe`, `/toastify_lib`), ist aber ein eigenständiges Projekt. **Installieren Sie toABify nicht parallel zu HA-Toastify** - die internen Identifikatoren würden Konflikte verursachen.
 
 ## ⚡ Schnelltest
 
