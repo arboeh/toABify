@@ -6,7 +6,7 @@
 [![release](https://img.shields.io/github/v/release/arboeh/toABify?display_name=tag)](https://github.com/arboeh/toABify/releases/latest)
 [![CI](https://github.com/arboeh/toABify/actions/workflows/ci.yml/badge.svg)](https://github.com/arboeh/toABify/actions)
 [![Security](https://img.shields.io/badge/Security-Policy-blue?logo=github)](https://github.com/arboeh/toABify/blob/main/SECURITY.md)
-[![maintained](https://img.shields.io/maintained/yes/2026)](https://github.com/arboeh/toABify/graphs/commit-activity)
+[![last commit](https://img.shields.io/github/last-commit/arboeh/toABify)](https://github.com/arboeh/toABify/commits)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/arboeh/toABify/blob/main/LICENSE)
 
 **A Home Assistant integration that displays beautiful toast-style notifications on your interface, powered by [Toastify-JS](https://apvarun.github.io/toastify-js/).**
@@ -28,7 +28,13 @@ data:
 > **Use `visibility: all` here.** The default is `dashboard`, so a toast sent from the
 > developer tools (page path `/developer-tools/...`) is not shown at all.
 
-![toABify Preview](images/screenshot.jpg)
+<p align="center">
+  <img src="images/screenshot_01.png" alt="Example 01: Multiple toasts with theme color and custom icons" width="32%">
+  <img src="images/screenshot_02.png" alt="Example 02: Single toast with icon" width="32%">
+  <img src="images/screenshot_03.png" alt="Example 03: Toast with action button and close button" width="32%">
+</p>
+
+*Example 01: Multiple toasts with theme color (`green`) and custom icons · Example 02: Single toast with icon (`light` theme) · Example 03: Toast with action button (`button_label` + `onClick`) and close button*
 
 ## Features
 - **HACS Ready**: Simple installation and updates.

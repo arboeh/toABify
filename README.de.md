@@ -6,7 +6,7 @@
 [![Release](https://img.shields.io/github/v/release/arboeh/toABify?display_name=tag&label=Release)](https://github.com/arboeh/toABify/releases/latest)
 [![CI](https://github.com/arboeh/toABify/actions/workflows/ci.yml/badge.svg)](https://github.com/arboeh/toABify/actions)
 [![Security](https://img.shields.io/badge/Security-Richtlinie-blue?logo=github)](https://github.com/arboeh/toABify/blob/main/SECURITY.md)
-[![maintained](https://img.shields.io/maintained/yes/2026)](https://github.com/arboeh/toABify/graphs/commit-activity)
+[![letzter Commit](https://img.shields.io/github/last-commit/arboeh/toABify?label=letzter%20Commit)](https://github.com/arboeh/toABify/commits)
 [![Lizenz: MIT](https://img.shields.io/badge/Lizenz-MIT-yellow.svg)](https://github.com/arboeh/toABify/blob/main/LICENSE)
 
 **Eine Home Assistant-Integration, die schöne Toast-Benachrichtigungen auf Ihrer Oberfläche anzeigt, basierend auf [Toastify-JS](https://apvarun.github.io/toastify-js/).**
@@ -28,7 +28,13 @@ data:
 > **Verwenden Sie hier `visibility: all`.** Der Standardwert ist `dashboard`, daher wird ein
 > Toast aus den Entwicklerwerkzeugen (Pfad `/developer-tools/...`) sonst überhaupt nicht angezeigt.
 
-![toABify Vorschau](images/screenshot.jpg)
+<p align="center">
+  <img src="images/screenshot_01.png" alt="Beispiel 01: Mehrere Toasts in Schema-Farbe mit eigenen Icons" width="32%">
+  <img src="images/screenshot_02.png" alt="Beispiel 02: Einzelner Toast mit Icon" width="32%">
+  <img src="images/screenshot_03.png" alt="Beispiel 03: Toast mit Aktions-Button und Schließ-Button" width="32%">
+</p>
+
+*Beispiel 01: Mehrere Toasts in Schema-Farbe (`green`) mit eigenen Icons · Beispiel 02: Einzelner Toast mit Icon (`light`-Schema) · Beispiel 03: Toast mit Aktions-Button (`button_label` + `onClick`) und Schließ-Button*
 
 ## Funktionen
 - **HACS-kompatibel**: Einfache Installation und Updates.
